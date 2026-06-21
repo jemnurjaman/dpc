@@ -50,8 +50,8 @@
         <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
             <i class="ph-fill ph-identification-card text-3xl"></i>
             <div>
-                <h1 class="text-xl font-bold">Data Pengurus DPC PAN OKI</h1>
-                <p class="text-xs text-blue-100">Sistem AI Ekstrak KTP & Manajemen Data</p>
+                <h1 class="text-xl font-bold">DPD PAN OKI</h1>
+                <p class="text-xs text-blue-100">Manajemen Data Pengurus DPC</p>
             </div>
         </div>
     </header>
@@ -77,7 +77,7 @@
                         <h2 class="text-xl font-bold flex items-center gap-2">
                             <i class="ph-fill ph-chart-pie-slice text-blue-600"></i> Statistik Pengurus
                         </h2>
-                        <p class="text-sm text-slate-500">Rangkuman data yang bersumber dari Google Spreadsheet</p>
+                        <p class="text-sm text-slate-500">Rangkuman data</p>
                     </div>
                     <button id="refreshDashBtn" class="text-sm bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 font-medium transition-colors flex items-center gap-2">
                         <i class="ph ph-arrows-clockwise"></i> Segarkan Analisis
@@ -139,6 +139,19 @@
                             </tbody>
                         </table>
                     </div>
+
+                    <!-- ✨ Fitur Gemini API: Analisis Insight Dashboard -->
+                    <div class="mt-8 bg-indigo-50 p-6 rounded-xl border border-indigo-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
+                                <i class="ph-fill ph-sparkle text-indigo-600"></i> Insight Strategis AI
+                            </h3>
+                            <button id="generateInsightBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm">
+                                <i class="ph ph-magic-wand"></i> Minta Analisis AI
+                            </button>
+                        </div>
+                        <div id="aiInsightResult" class="text-sm text-indigo-800 whitespace-pre-wrap hidden bg-white p-4 rounded-lg border border-indigo-100 shadow-inner min-h-[100px]"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -199,6 +212,7 @@
                             <p class="text-sm text-slate-500">Koreksi data di bawah ini jika terdapat kesalahan.</p>
                         </div>
                         <div class="flex flex-wrap justify-end gap-2">
+                          
                             <button id="sheetsBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="ph ph-google-logo text-lg"></i>
                                 Simpan ke Spreadsheet
@@ -285,13 +299,30 @@
         <!-- ======================= -->
         <div id="sheetView" class="hidden">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                     <h2 class="text-xl font-bold flex items-center gap-2">
                         <i class="ph ph-table text-emerald-600"></i> Rekapitulasi Data
                     </h2>
-                    <button id="refreshSheetBtn" class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-200 font-medium transition-colors flex items-center gap-2">
-                        <i class="ph ph-arrows-clockwise"></i> Segarkan Data
-                    </button>
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Fitur Pencarian Baru -->
+                        <div class="relative">
+                            <input type="text" id="searchInput" placeholder="Cari nama pengurus..." class="border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-56 transition-all" oninput="renderSheetTable()">
+                            <i class="ph ph-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-base"></i>
+                        </div>
+                        
+                        <label class="text-sm font-medium text-slate-600 hidden sm:block">Tampilkan:</label>
+                        <select id="limitSelect" class="border border-slate-300 rounded-lg px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500" onchange="renderSheetTable()">
+                            <option value="10">10 Baris</option>
+                            <option value="20">20 Baris</option>
+                            <option value="30">30 Baris</option>
+                            <option value="40">40 Baris</option>
+                            <option value="50">50 Baris</option>
+                            <option value="all">Semua</option>
+                        </select>
+                        <button id="refreshSheetBtn" class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-200 font-medium transition-colors flex items-center gap-2">
+                            <i class="ph ph-arrows-clockwise"></i> Segarkan Data
+                        </button>
+                    </div>
                 </div>
                 <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
                     <table class="w-full text-sm text-left border-collapse whitespace-nowrap">
@@ -311,6 +342,25 @@
         </div>
 
     </main>
+
+    <!-- Modal Buat Pesan WA -->
+    <div id="waModal" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl m-4">
+            <h3 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-900">
+                <i class="ph-fill ph-whatsapp-logo text-green-500"></i> ✨ Draf Pesan Sambutan
+            </h3>
+            <p class="text-xs text-slate-500 mb-4">Pesan ini dibuat otomatis oleh AI berdasarkan data pengurus.</p>
+            
+            <textarea id="waMessageContent" rows="6" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mb-4 resize-none" placeholder="Membuat pesan..."></textarea>
+            
+            <div class="flex justify-end gap-3">
+                <button id="closeWaModalBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Tutup</button>
+                <button id="copyWaBtn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2">
+                    <i class="ph ph-copy"></i> Salin Teks
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         // DOM Elements - Tabs
@@ -343,11 +393,21 @@
         const dsPctP = document.getElementById('dsPctP');
         const dsTableBody = document.getElementById('dsTableBody');
 
+        // DOM Elements - AI Insight & WA
+        const generateInsightBtn = document.getElementById('generateInsightBtn');
+        const aiInsightResult = document.getElementById('aiInsightResult');
+        const waModal = document.getElementById('waModal');
+        const waMessageContent = document.getElementById('waMessageContent');
+        const closeWaModalBtn = document.getElementById('closeWaModalBtn');
+        const copyWaBtn = document.getElementById('copyWaBtn');
+
         // DOM Elements - Spreadsheet View
         const refreshSheetBtn = document.getElementById('refreshSheetBtn');
         const sheetTableHead = document.getElementById('sheetTableHead');
         const sheetTableBody = document.getElementById('sheetTableBody');
         const sheetLoading = document.getElementById('sheetLoading');
+        const limitSelect = document.getElementById('limitSelect');
+        const searchInput = document.getElementById('searchInput'); // Element Pencarian
 
         // Config
         const apiKey = ""; // API Key otomatis oleh env
@@ -417,6 +477,7 @@
             dashError.classList.add('hidden');
             dashLoading.classList.remove('hidden');
             dashLoading.classList.add('flex');
+            aiInsightResult.classList.add('hidden'); // Sembunyikan insight saat refresh
 
             try {
                 const data = await fetchSpreadsheetData();
@@ -512,6 +573,11 @@
             }
 
             dsTableBody.innerHTML = tbodyHtml;
+            
+            // Simpan data ringkasan ke elemen global untuk diakses AI
+            window.dashboardSummary = {
+                total, totalL, totalP, pctTotal, perKec
+            };
         }
 
         // ------------- SPREADSHEET TABLE LOGIC -------------
@@ -524,41 +590,94 @@
             try {
                 const data = await fetchSpreadsheetData();
                 if (data && data.length > 0) {
-                    const headers = data[0];
-                    // Merender Header Tabel - Ubah kolom 0 menjadi Nomor Urut
-                    let headerHtml = '<tr>';
-                    headerHtml += `<th class="px-4 py-3 text-center">No.</th>`;
-                    for(let j = 1; j < headers.length; j++) {
-                        headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
-                    }
-                    headerHtml += '</tr>';
-                    sheetTableHead.innerHTML = headerHtml;
-
-                    // Merender Body Tabel
-                    let bodyHtml = '';
-                    for (let i = 1; i < data.length; i++) {
-                        // Cek jika baris kosong agar nomor tidak maju
-                        if(!data[i] || (!data[i][1] && !data[i][2])) continue;
-
-                        bodyHtml += '<tr class="hover:bg-slate-50">';
-                        // Kolom Waktu diganti menjadi Nomor Iterasi (i)
-                        bodyHtml += `<td class="px-4 py-2 border-t border-slate-100 text-center font-medium text-slate-500">${i}</td>`;
-                        for (let j = 1; j < data[i].length; j++) { 
-                            bodyHtml += `<td class="px-4 py-2 border-t border-slate-100">${data[i][j] || '-'}</td>`; 
-                        }
-                        bodyHtml += '</tr>';
-                    }
-                    sheetTableBody.innerHTML = bodyHtml;
+                    globalSheetData = data;
+                    renderSheetTable();
                 } else {
-                    sheetTableBody.innerHTML = `<tr><td class="px-4 py-8 text-center text-slate-500">Tidak ada data di Spreadsheet.</td></tr>`;
+                    sheetTableBody.innerHTML = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada data di Spreadsheet.</td></tr>`;
                 }
             } catch (error) {
                 console.error("Sheet Load Error:", error);
-                sheetTableBody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500">Gagal memuat data. Periksa Apps Script.</td></tr>`;
+                sheetTableBody.innerHTML = `<tr><td colspan="100%" class="px-4 py-8 text-center text-red-500">Gagal memuat data. Periksa Apps Script.</td></tr>`;
             } finally {
                 sheetLoading.classList.add('hidden');
                 sheetLoading.classList.remove('flex');
             }
+        }
+
+        function renderSheetTable() {
+            if (!globalSheetData || globalSheetData.length === 0) return;
+
+            const limitVal = document.getElementById('limitSelect').value;
+            const limit = limitVal === 'all' ? globalSheetData.length - 1 : parseInt(limitVal);
+            
+            // Ambil query pencarian
+            const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
+
+            const headers = globalSheetData[0];
+            // Mencari otomatis letak kolom NIK dan Nama
+            const nikIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nik'));
+            const namaIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nama'));
+
+            // Merender Header Tabel - Ubah kolom 0 menjadi Nomor Urut
+            let headerHtml = '<tr>';
+            headerHtml += `<th class="px-4 py-3 text-center">No.</th>`;
+            for(let j = 1; j < headers.length; j++) {
+                headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
+            }
+            headerHtml += '</tr>';
+            sheetTableHead.innerHTML = headerHtml;
+
+            // Merender Body Tabel
+            let bodyHtml = '';
+            let count = 0;
+            
+            for (let i = 1; i < globalSheetData.length; i++) {
+                if (count >= limit) break; // Berhenti jika mencapai limit yang dipilih
+
+                const row = globalSheetData[i];
+                // Cek jika baris kosong agar nomor tidak maju
+                if(!row || (!row[1] && !row[2])) continue;
+
+                // Logika Filter Pencarian Berdasarkan Nama
+                if (searchQuery) {
+                    let searchTarget = namaIdx !== -1 ? (row[namaIdx] || '').toString().toLowerCase() : (row[2] || '').toString().toLowerCase();
+                    if (!searchTarget.includes(searchQuery)) {
+                        continue; // Lewati baris ini jika nama tidak cocok dengan pencarian
+                    }
+                }
+
+                bodyHtml += '<tr class="hover:bg-slate-50">';
+                // Kolom Waktu diganti menjadi Nomor Urut hasil filter
+                bodyHtml += `<td class="px-4 py-2 border-t border-slate-100 text-center font-medium text-slate-500">${count + 1}</td>`;
+                
+                for (let j = 1; j < row.length; j++) { 
+                    let cellData = row[j] || '-';
+                    
+                    // Sembunyikan 6 Angka Terakhir NIK dengan 5 Bintang
+                    if (j === nikIdx && cellData !== '-') {
+                        let nikStr = cellData.toString();
+                        if (nikStr.length > 6) {
+                            cellData = nikStr.slice(0, -6) + '*****';
+                        }
+                    } else if (typeof cellData === 'string' && cellData.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                        cellData = new Date(cellData).toLocaleString('id-ID');
+                    }
+
+                    bodyHtml += `<td class="px-4 py-2 border-t border-slate-100">${cellData}</td>`; 
+                }
+                bodyHtml += '</tr>';
+                count++;
+            }
+
+            if (count === 0) {
+                if (searchQuery) {
+                    bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada pengurus dengan nama "<b>${searchQuery}</b>".</td></tr>`;
+                } else {
+                    bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk ditampilkan.</td></tr>`;
+                }
+            }
+
+            sheetTableBody.innerHTML = bodyHtml;
         }
 
         refreshSheetBtn.addEventListener('click', loadSheetData);
@@ -670,6 +789,7 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                 showToast("✨ AI Vision berhasil membaca dan menyusun data!", "success");
             } catch (error) {
                 console.error("OCR Error:", error);
+                // Swal.fire('Gagal', 'Terjadi kesalahan saat memproses gambar dengan AI.', 'error');
                 showToast("Terjadi kesalahan saat memproses gambar dengan AI.", "error");
             } finally {
                 scanBtn.disabled = false;
@@ -677,6 +797,66 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                 statusContainer.classList.add('hidden');
             }
         });
+
+        // ✨ AI Logic: Insight Strategis
+        generateInsightBtn.addEventListener('click', async () => {
+            if (!window.dashboardSummary) {
+                // Swal.fire('Info', 'Silakan tunggu data dashboard selesai dimuat terlebih dahulu.', 'info');
+                showToast("Silakan tunggu data dashboard selesai dimuat terlebih dahulu.", "error");
+                return;
+            }
+
+            const btnOriginalText = generateInsightBtn.innerHTML;
+            generateInsightBtn.disabled = true;
+            generateInsightBtn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;"></div> Menganalisis...';
+            aiInsightResult.classList.remove('hidden');
+            aiInsightResult.innerHTML = '<span class="text-slate-500 italic">Gemini AI sedang menyusun laporan strategis...</span>';
+
+            const summary = window.dashboardSummary;
+            const prompt = `Sebagai konsultan politik profesional untuk DPD PAN OKI, buatkan analisis strategis singkat (maksimal 3 paragraf) berdasarkan data pengurus saat ini:
+            - Total Pengurus: ${summary.total} (Laki-laki: ${summary.totalL}, Perempuan: ${summary.totalP})
+            - Persentase Keterwakilan Perempuan: ${summary.pctTotal}%
+            - Sebaran per Kecamatan: ${JSON.stringify(summary.perKec)}
+            
+            Fokuskan evaluasi pada:
+            1. Tren rekrutmen saat ini.
+            2. Peringatan jika keterwakilan perempuan secara global atau di kecamatan tertentu berada di bawah 30%.
+            3. Saran langkah selanjutnya (Call to Action) untuk pimpinan partai.
+            Gunakan nada profesional, semangat, dan langsung pada intinya.`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: { parts: [{ text: "Anda adalah analis data politik senior yang membantu pimpinan partai membaca statistik keanggotaan." }] }
+            };
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!response.ok) throw new Error("Gagal mengambil insight AI");
+                const result = await response.json();
+                const text = result.candidates[0].content.parts[0].text;
+                
+                // Format teks (ubah markdown bold menjadi HTML)
+                const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+                aiInsightResult.innerHTML = formattedText;
+                
+            } catch (error) {
+                console.error("AI Insight Error:", error);
+                aiInsightResult.innerHTML = '<span class="text-red-500">Gagal menghasilkan analisis AI. Coba lagi nanti.</span>';
+                // Swal.fire('Error', 'Gagal memanggil Gemini API', 'error');
+                showToast("Gagal memanggil Gemini API", "error");
+            } finally {
+                generateInsightBtn.disabled = false;
+                generateInsightBtn.innerHTML = btnOriginalText;
+            }
+        });
+
+        
 
         // Fitur Simpan Data ke Google Spreadsheet
         sheetsBtn.addEventListener('click', async () => {
