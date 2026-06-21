@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DATA PENGURUS DPC PAN OKI</title>
+    
+    <!-- Tailwind CSS untuk Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* Animasi loading sederhana */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Custom scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen font-sans text-slate-800">
+
+    <!-- Navbar -->
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
+            <i class="ph-fill ph-identification-card text-3xl"></i>
+            <div>
+                <h1 class="text-xl font-bold">Data Pengurus DPC PAN OKI</h1>
+                <p class="text-xs text-blue-100">Sistem AI Ekstrak KTP & Manajemen Data</p>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-blue-700 text-white shadow-inner">
+        <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto custom-scrollbar">
+            <button id="tabDashboard" class="py-3 px-6 font-semibold border-b-4 border-transparent text-blue-200 hover:text-white transition-colors whitespace-nowrap">Dashboard</button>
+            <button id="tabScan" class="py-3 px-6 font-semibold border-b-4 border-white transition-colors whitespace-nowrap">Input</button>
+            <button id="tabSheet" class="py-3 px-6 font-semibold border-b-4 border-transparent text-blue-200 hover:text-white transition-colors whitespace-nowrap">Rekapitulasi Data</button>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        
+        <!-- ======================= -->
+        <!--   TAMPILAN DASHBOARD    -->
+        <!-- ======================= -->
+        <div id="dashboardView" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-xl font-bold flex items-center gap-2">
+                            <i class="ph-fill ph-chart-pie-slice text-blue-600"></i> Statistik Pengurus
+                        </h2>
+                        <p class="text-sm text-slate-500">Rangkuman data yang bersumber dari Google Spreadsheet</p>
+                    </div>
+                    <button id="refreshDashBtn" class="text-sm bg-blue-100 text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-200 font-medium transition-colors flex items-center gap-2">
+                        <i class="ph ph-arrows-clockwise"></i> Segarkan Analisis
+                    </button>
+                </div>
+
+                <!-- Loading State Dashboard -->
+                <div id="dashLoading" class="text-center py-12 text-slate-500 hidden flex-col items-center justify-center gap-3">
+                    <div class="loader" style="border-top-color: #2563eb;"></div>
+                    <span>Menganalisis data Pengurus DPC</span>
+                </div>
+                
+                <!-- Error State Dashboard -->
+                <div id="dashError" class="hidden bg-red-50 text-red-700 p-4 rounded-lg border border-red-200 mb-6 text-sm">
+                    <i class="ph ph-warning-circle text-lg align-middle mr-1"></i> <span id="dashErrorText"></span>
+                </div>
+
+                <!-- Konten Dashboard -->
+                <div id="dashContent" class="hidden">
+                    <!-- Kartu Ringkasan -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                            <i class="ph ph-users text-3xl text-slate-400 mb-2"></i>
+                            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pengurus</span>
+                            <span id="dsTotal" class="text-3xl font-bold text-slate-800">0</span>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                            <i class="ph ph-gender-male text-3xl text-blue-500 mb-2"></i>
+                            <span class="text-xs font-semibold text-blue-600 uppercase tracking-wider">Laki-laki</span>
+                            <span id="dsLaki" class="text-3xl font-bold text-blue-700">0</span>
+                        </div>
+                        <div class="bg-pink-50 border border-pink-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                            <i class="ph ph-gender-female text-3xl text-pink-500 mb-2"></i>
+                            <span class="text-xs font-semibold text-pink-600 uppercase tracking-wider">Perempuan</span>
+                            <span id="dsPerempuan" class="text-3xl font-bold text-pink-700">0</span>
+                        </div>
+                        <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex flex-col items-center justify-center text-center">
+                            <i class="ph ph-chart-bar text-3xl text-emerald-500 mb-2"></i>
+                            <span class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Keterwakilan Perempuan</span>
+                            <span id="dsPctP" class="text-3xl font-bold text-emerald-700">0%</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabel Per Kecamatan -->
+                    <h3 class="text-lg font-bold mb-4 border-b pb-2 text-slate-700">Sebaran & Kuota Per Kecamatan</h3>
+                    <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                        <table class="w-full text-sm text-left border-collapse">
+                            <thead class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
+                                <tr>
+                                    <th class="px-4 py-3">Kecamatan</th>
+                                    <th class="px-4 py-3 text-center">Total</th>
+                                    <th class="px-4 py-3 text-center">Laki-laki</th>
+                                    <th class="px-4 py-3 text-center">Perempuan</th>
+                                    <th class="px-4 py-3 text-center">% Perempuan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dsTableBody" class="divide-y divide-slate-100 text-slate-600">
+                                <!-- Render by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!--   TAMPILAN SCAN KTP     -->
+        <!-- ======================= -->
+        <div id="scanView" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <!-- Panel Kiri: Upload & Preview -->
+            <div class="lg:col-span-5 space-y-6">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                    <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                        <i class="ph ph-upload-simple text-blue-500"></i>
+                        Upload Gambar KTP
+                    </h2>
+                    
+                    <!-- Area Upload -->
+                    <label for="imageInput" class="block w-full border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-blue-400 transition-colors">
+                        <i class="ph ph-image text-4xl text-slate-400 mb-2"></i>
+                        <p class="text-sm font-medium text-slate-600">Klik untuk memilih gambar KTP</p>
+                        <p class="text-xs text-slate-400 mt-1">Format didukung: JPG, PNG, WEBP</p>
+                        <input type="file" id="imageInput" accept="image/*" class="hidden">
+                    </label>
+
+                    <!-- Area Preview -->
+                    <div id="previewContainer" class="hidden mt-4">
+                        <p class="text-xs font-medium text-slate-500 mb-2">Pratinjau Gambar:</p>
+                        <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex justify-center">
+                            <img id="imagePreview" src="" alt="Preview KTP" class="w-full h-auto max-h-64 object-contain">
+                        </div>
+                        
+                        <button id="scanBtn" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md">
+                            <i class="ph ph-magic-wand text-xl"></i>
+                            Pindai dengan AI Vision
+                        </button>
+                    </div>
+
+                    <!-- Status & Progress -->
+                    <div id="statusContainer" class="hidden mt-4 p-4 rounded-lg bg-purple-50 border border-purple-100 text-purple-800 text-sm">
+                        <div class="flex items-center gap-3">
+                            <div class="loader" style="border-top-color: #9333ea;"></div>
+                            <span id="statusText" class="font-medium">AI sedang menganalisis gambar...</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Panel Kanan: Form Data & Ekspor -->
+            <div class="lg:col-span-7">
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 class="text-xl font-bold flex items-center gap-2">
+                                <i class="ph ph-list-dashes text-blue-500"></i>
+                                Hasil Ekstraksi Data
+                            </h2>
+                            <p class="text-sm text-slate-500">Koreksi data di bawah ini jika terdapat kesalahan.</p>
+                        </div>
+                        <div class="flex flex-wrap justify-end gap-2">
+                            <button id="sheetsBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                                <i class="ph ph-google-logo text-lg"></i>
+                                Simpan ke Spreadsheet
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Notifikasi Toast -->
+                    <div id="toastAlert" class="hidden mb-4 p-3 rounded-lg text-sm font-medium transition-all"></div>
+
+                    <!-- Form KTP -->
+                    <form id="ktpForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">NIK</label>
+                            <input type="text" id="f_nik" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-lg" placeholder="16 Digit NIK">
+                        </div>
+                        
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Lengkap</label>
+                            <input type="text" id="f_nama" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Tempat/Tgl Lahir</label>
+                            <input type="text" id="f_ttl" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Kelamin</label>
+                            <input type="text" id="f_jk" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Alamat</label>
+                            <textarea id="f_alamat" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase resize-none"></textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">RT/RW</label>
+                            <input type="text" id="f_rtrw" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kel/Desa</label>
+                            <input type="text" id="f_desa" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kecamatan</label>
+                            <input type="text" id="f_kecamatan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Agama</label>
+                            <input type="text" id="f_agama" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Status Perkawinan</label>
+                            <input type="text" id="f_kawin" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Pekerjaan</label>
+                            <input type="text" id="f_pekerjaan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Kewarganegaraan</label>
+                            <input type="text" id="f_warga" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 mb-1">Berlaku Hingga</label>
+                            <input type="text" id="f_berlaku" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" value="SEUMUR HIDUP">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ======================= -->
+        <!--  TAMPILAN SPREADSHEET   -->
+        <!-- ======================= -->
+        <div id="sheetView" class="hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold flex items-center gap-2">
+                        <i class="ph ph-table text-emerald-600"></i> Rekapitulasi Data
+                    </h2>
+                    <button id="refreshSheetBtn" class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg hover:bg-emerald-200 font-medium transition-colors flex items-center gap-2">
+                        <i class="ph ph-arrows-clockwise"></i> Segarkan Data
+                    </button>
+                </div>
+                <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
+                    <table class="w-full text-sm text-left border-collapse whitespace-nowrap">
+                        <thead id="sheetTableHead" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
+                            <!-- Header tabel dimuat via JS -->
+                        </thead>
+                        <tbody id="sheetTableBody" class="divide-y divide-slate-100 text-slate-600">
+                            <!-- Data dimuat via JS -->
+                        </tbody>
+                    </table>
+                    <div id="sheetLoading" class="text-center py-12 text-slate-500 hidden flex-col items-center justify-center gap-3">
+                        <div class="loader" style="border-top-color: #10b981;"></div>
+                        <span>Memuat data dari Google Spreadsheet...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // DOM Elements - Tabs
+        const tabDashboard = document.getElementById('tabDashboard');
+        const tabScan = document.getElementById('tabScan');
+        const tabSheet = document.getElementById('tabSheet');
+        const dashboardView = document.getElementById('dashboardView');
+        const scanView = document.getElementById('scanView');
+        const sheetView = document.getElementById('sheetView');
+
+        // DOM Elements - KTP & AI
+        const imageInput = document.getElementById('imageInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const scanBtn = document.getElementById('scanBtn');
+        const statusContainer = document.getElementById('statusContainer');
+        const statusText = document.getElementById('statusText');
+        const sheetsBtn = document.getElementById('sheetsBtn');
+        const toastAlert = document.getElementById('toastAlert');
+
+        // DOM Elements - Dashboard
+        const dashLoading = document.getElementById('dashLoading');
+        const dashContent = document.getElementById('dashContent');
+        const dashError = document.getElementById('dashError');
+        const dashErrorText = document.getElementById('dashErrorText');
+        const refreshDashBtn = document.getElementById('refreshDashBtn');
+        const dsTotal = document.getElementById('dsTotal');
+        const dsLaki = document.getElementById('dsLaki');
+        const dsPerempuan = document.getElementById('dsPerempuan');
+        const dsPctP = document.getElementById('dsPctP');
+        const dsTableBody = document.getElementById('dsTableBody');
+
+        // DOM Elements - Spreadsheet View
+        const refreshSheetBtn = document.getElementById('refreshSheetBtn');
+        const sheetTableHead = document.getElementById('sheetTableHead');
+        const sheetTableBody = document.getElementById('sheetTableBody');
+        const sheetLoading = document.getElementById('sheetLoading');
+
+        // Config
+        const apiKey = ""; // API Key otomatis oleh env
+        const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwB4GIxJUj7wUcJz2Ku169AL973oD8hr1ZfBy_M7myVmREPSjQib0d8D17o9uNw2Tyomg/exec";
+
+        let currentImageFile = null;
+        let base64ImageData = null;
+        let globalSheetData = null;
+
+        // ------------- TAB NAVIGATION -------------
+        function switchTab(activeTabId) {
+            // Reset Tab UI
+            [tabDashboard, tabScan, tabSheet].forEach(tab => {
+                tab.classList.add('border-transparent', 'text-blue-200');
+                tab.classList.remove('border-white', 'text-white');
+            });
+            // Hide Views
+            [dashboardView, scanView, sheetView].forEach(view => view.classList.add('hidden'));
+
+            // Activate Tab
+            if(activeTabId === 'tabDashboard') {
+                tabDashboard.classList.remove('border-transparent', 'text-blue-200');
+                tabDashboard.classList.add('border-white', 'text-white');
+                dashboardView.classList.remove('hidden');
+                updateDashboard();
+            } else if(activeTabId === 'tabScan') {
+                tabScan.classList.remove('border-transparent', 'text-blue-200');
+                tabScan.classList.add('border-white', 'text-white');
+                scanView.classList.remove('hidden');
+            } else if(activeTabId === 'tabSheet') {
+                tabSheet.classList.remove('border-transparent', 'text-blue-200');
+                tabSheet.classList.add('border-white', 'text-white');
+                sheetView.classList.remove('hidden');
+                loadSheetData();
+            }
+        }
+
+        tabDashboard.addEventListener('click', () => switchTab('tabDashboard'));
+        tabScan.addEventListener('click', () => switchTab('tabScan'));
+        tabSheet.addEventListener('click', () => switchTab('tabSheet'));
+
+        // Helper: Toast Alert
+        function showToast(message, type = 'success') {
+            toastAlert.textContent = message;
+            toastAlert.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800', 'bg-blue-100', 'text-blue-800');
+            
+            if (type === 'success') toastAlert.classList.add('bg-green-100', 'text-green-800', 'border', 'border-green-200');
+            else if (type === 'error') toastAlert.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-200');
+            else toastAlert.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-200');
+
+            setTimeout(() => toastAlert.classList.add('hidden'), 5000);
+        }
+
+        // ------------- DATA FETCHING -------------
+        async function fetchSpreadsheetData() {
+            if (appsScriptUrl.trim() === "") throw new Error("URL Google Apps Script belum disetel.");
+            const response = await fetch(appsScriptUrl);
+            if (!response.ok) throw new Error("Gagal terhubung ke Google Apps Script");
+            const data = await response.json();
+            globalSheetData = data;
+            return data;
+        }
+
+        // ------------- DASHBOARD LOGIC -------------
+        async function updateDashboard() {
+            dashContent.classList.add('hidden');
+            dashError.classList.add('hidden');
+            dashLoading.classList.remove('hidden');
+            dashLoading.classList.add('flex');
+
+            try {
+                const data = await fetchSpreadsheetData();
+                renderDashboard(data);
+            } catch(e) {
+                console.error(e);
+                dashErrorText.textContent = e.message || "Gagal memuat data statistik.";
+                dashError.classList.remove('hidden');
+            } finally {
+                dashLoading.classList.add('hidden');
+                dashLoading.classList.remove('flex');
+            }
+        }
+
+        refreshDashBtn.addEventListener('click', updateDashboard);
+
+        function renderDashboard(data) {
+            dashContent.classList.remove('hidden');
+            if(!data || data.length <= 1) {
+                // Tidak ada baris data selain header
+                return;
+            }
+
+            const headers = data[0].map(h => (h || '').toString().toLowerCase());
+            // Mencari indeks kolom Jenis Kelamin dan Kecamatan secara otomatis
+            let jkIdx = headers.findIndex(h => h.includes('kelamin') || h.includes('jk') || h.includes('jenis'));
+            let kecIdx = headers.findIndex(h => h.includes('kecamatan') || h.includes('kec'));
+
+            // Fallback index standar jika string header berbeda
+            if(jkIdx === -1) jkIdx = 4; 
+            if(kecIdx === -1) kecIdx = 8; 
+
+            let total = 0;
+            let totalL = 0;
+            let totalP = 0;
+            let perKec = {};
+
+            // Proses baris per baris
+            for(let i = 1; i < data.length; i++) {
+                const row = data[i];
+                if(!row || row.length === 0) continue;
+                // Asumsi data valid minimal memiliki NIK / Nama di arraynya
+                if(!row[1] && !row[2]) continue; 
+
+                let jk = (row[jkIdx] || '').toString().toUpperCase();
+                let kec = (row[kecIdx] || '').toString().toUpperCase() || 'TIDAK DIKETAHUI';
+                
+                total++;
+                if(jk.includes('PEREMPUAN')) {
+                    totalP++;
+                } else {
+                    totalL++;
+                }
+
+                // Pengelompokan Kecamatan
+                if(!perKec[kec]) perKec[kec] = { total: 0, L: 0, P: 0 };
+                perKec[kec].total++;
+                if(jk.includes('PEREMPUAN')) perKec[kec].P++;
+                else perKec[kec].L++;
+            }
+
+            const pctTotal = total > 0 ? ((totalP / total) * 100).toFixed(1) : 0;
+            
+            dsTotal.textContent = total;
+            dsLaki.textContent = totalL;
+            dsPerempuan.textContent = totalP;
+            dsPctP.textContent = pctTotal + '%';
+
+            // Merender Tabel Per Kecamatan
+            let tbodyHtml = '';
+            for(let kec in perKec) {
+                let s = perKec[kec];
+                let pct = s.total > 0 ? ((s.P / s.total) * 100).toFixed(1) : 0;
+                let isPassed = pct >= 30; // Kriteria 30% perempuan
+                let badgeClass = isPassed ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-red-100 text-red-800 border-red-200';
+
+                tbodyHtml += `
+                    <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
+                        <td class="px-4 py-3 font-medium text-slate-800">${kec}</td>
+                        <td class="px-4 py-3 text-center text-slate-700 font-semibold">${s.total}</td>
+                        <td class="px-4 py-3 text-center text-blue-600">${s.L}</td>
+                        <td class="px-4 py-3 text-center text-pink-600">${s.P}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="inline-block border px-2 py-1 rounded-md text-xs font-bold ${badgeClass}">
+                                ${pct}%
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }
+            if(Object.keys(perKec).length === 0) {
+                tbodyHtml = `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Belum ada sebaran wilayah</td></tr>`;
+            }
+
+            dsTableBody.innerHTML = tbodyHtml;
+        }
+
+        // ------------- SPREADSHEET TABLE LOGIC -------------
+        async function loadSheetData() {
+            sheetTableBody.innerHTML = '';
+            sheetTableHead.innerHTML = '';
+            sheetLoading.classList.remove('hidden');
+            sheetLoading.classList.add('flex');
+
+            try {
+                const data = await fetchSpreadsheetData();
+                if (data && data.length > 0) {
+                    const headers = data[0];
+                    // Merender Header Tabel - Ubah kolom 0 menjadi Nomor Urut
+                    let headerHtml = '<tr>';
+                    headerHtml += `<th class="px-4 py-3 text-center">No.</th>`;
+                    for(let j = 1; j < headers.length; j++) {
+                        headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
+                    }
+                    headerHtml += '</tr>';
+                    sheetTableHead.innerHTML = headerHtml;
+
+                    // Merender Body Tabel
+                    let bodyHtml = '';
+                    for (let i = 1; i < data.length; i++) {
+                        // Cek jika baris kosong agar nomor tidak maju
+                        if(!data[i] || (!data[i][1] && !data[i][2])) continue;
+
+                        bodyHtml += '<tr class="hover:bg-slate-50">';
+                        // Kolom Waktu diganti menjadi Nomor Iterasi (i)
+                        bodyHtml += `<td class="px-4 py-2 border-t border-slate-100 text-center font-medium text-slate-500">${i}</td>`;
+                        for (let j = 1; j < data[i].length; j++) { 
+                            bodyHtml += `<td class="px-4 py-2 border-t border-slate-100">${data[i][j] || '-'}</td>`; 
+                        }
+                        bodyHtml += '</tr>';
+                    }
+                    sheetTableBody.innerHTML = bodyHtml;
+                } else {
+                    sheetTableBody.innerHTML = `<tr><td class="px-4 py-8 text-center text-slate-500">Tidak ada data di Spreadsheet.</td></tr>`;
+                }
+            } catch (error) {
+                console.error("Sheet Load Error:", error);
+                sheetTableBody.innerHTML = `<tr><td class="px-4 py-8 text-center text-red-500">Gagal memuat data. Periksa Apps Script.</td></tr>`;
+            } finally {
+                sheetLoading.classList.add('hidden');
+                sheetLoading.classList.remove('flex');
+            }
+        }
+
+        refreshSheetBtn.addEventListener('click', loadSheetData);
+
+
+        // ------------- KTP SCAN AI LOGIC -------------
+        // Handle Image Upload & Preview
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                currentImageFile = file;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    imagePreview.src = event.target.result;
+                    base64ImageData = event.target.result.split(',')[1];
+                    previewContainer.classList.remove('hidden');
+                    statusContainer.classList.add('hidden');
+                    document.getElementById('ktpForm').reset();
+                    document.getElementById('f_berlaku').value = "SEUMUR HIDUP";
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Retry wrapper for Gemini API
+        const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (e) {
+                    if (i === retries - 1) throw e;
+                    await new Promise(res => setTimeout(res, delay));
+                    delay *= 2;
+                }
+            }
+        };
+
+        scanBtn.addEventListener('click', async () => {
+            if (!base64ImageData) return;
+            scanBtn.disabled = true;
+            scanBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            statusContainer.classList.remove('hidden');
+            statusText.textContent = "AI sedang membaca dan menyusun data KTP...";
+
+            const promptText = `Ekstrak semua informasi dari dokumen KTP Indonesia ini. 
+Kembalikan datanya dalam format JSON sesuai schema yang diberikan.
+Kosongkan value jika datanya terpotong, tidak jelas, atau benar-benar tidak ditemukan.
+Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang salah baca menjadi 0).`;
+
+            const payload = {
+                contents: [{
+                    role: "user",
+                    parts: [
+                        { text: promptText },
+                        { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }
+                    ]
+                }],
+                systemInstruction: { parts: [{ text: "Kamu adalah sistem OCR dan ekstraktor data tercanggih khusus untuk KTP Indonesia." }] },
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: {
+                        type: "OBJECT",
+                        properties: {
+                            nik: { type: "STRING" },
+                            nama: { type: "STRING" },
+                            ttl: { type: "STRING" },
+                            jk: { type: "STRING" },
+                            alamat: { type: "STRING" },
+                            rtrw: { type: "STRING" },
+                            desa: { type: "STRING" },
+                            kecamatan: { type: "STRING" },
+                            agama: { type: "STRING" },
+                            kawin: { type: "STRING" },
+                            pekerjaan: { type: "STRING" },
+                            warga: { type: "STRING" }
+                        }
+                    }
+                }
+            };
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!jsonText) throw new Error("Respons AI kosong.");
+                
+                const data = JSON.parse(jsonText);
+
+                if(data.nik) document.getElementById('f_nik').value = data.nik;
+                if(data.nama) document.getElementById('f_nama').value = data.nama;
+                if(data.ttl) document.getElementById('f_ttl').value = data.ttl;
+                if(data.jk) document.getElementById('f_jk').value = data.jk;
+                if(data.alamat) document.getElementById('f_alamat').value = data.alamat;
+                if(data.rtrw) document.getElementById('f_rtrw').value = data.rtrw;
+                if(data.desa) document.getElementById('f_desa').value = data.desa;
+                if(data.kecamatan) document.getElementById('f_kecamatan').value = data.kecamatan;
+                if(data.agama) document.getElementById('f_agama').value = data.agama;
+                if(data.kawin) document.getElementById('f_kawin').value = data.kawin;
+                if(data.pekerjaan) document.getElementById('f_pekerjaan').value = data.pekerjaan;
+                if(data.warga) document.getElementById('f_warga').value = data.warga;
+
+                showToast("✨ AI Vision berhasil membaca dan menyusun data!", "success");
+            } catch (error) {
+                console.error("OCR Error:", error);
+                showToast("Terjadi kesalahan saat memproses gambar dengan AI.", "error");
+            } finally {
+                scanBtn.disabled = false;
+                scanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                statusContainer.classList.add('hidden');
+            }
+        });
+
+        // Fitur Simpan Data ke Google Spreadsheet
+        sheetsBtn.addEventListener('click', async () => {
+            const dataToExport = {
+                nik: document.getElementById('f_nik').value,
+                nama: document.getElementById('f_nama').value,
+                ttl: document.getElementById('f_ttl').value,
+                jk: document.getElementById('f_jk').value,
+                alamat: document.getElementById('f_alamat').value,
+                rtrw: document.getElementById('f_rtrw').value,
+                desa: document.getElementById('f_desa').value,
+                kecamatan: document.getElementById('f_kecamatan').value,
+                agama: document.getElementById('f_agama').value,
+                kawin: document.getElementById('f_kawin').value,
+                pekerjaan: document.getElementById('f_pekerjaan').value,
+                warga: document.getElementById('f_warga').value,
+                berlaku: document.getElementById('f_berlaku').value,
+            };
+
+            if (!dataToExport.nik && !dataToExport.nama) {
+                showToast("Form masih kosong. Silakan scan KTP terlebih dahulu.", "error");
+                return;
+            }
+
+            sheetsBtn.disabled = true;
+            sheetsBtn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;border-top-color:#fff;"></div> Menyimpan...';
+
+            try {
+                await fetch(appsScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: JSON.stringify(dataToExport)
+                });
+                showToast("Berhasil mengirim data ke Google Spreadsheet!", "success");
+                
+                // Clear cache data sheet agar ter-update saat tab dibuka
+                globalSheetData = null;
+
+            } catch (error) {
+                console.error("Spreadsheet Error:", error);
+                showToast("Gagal menyimpan ke Spreadsheet. Periksa koneksi internet.", "error");
+            } finally {
+                sheetsBtn.disabled = false;
+                sheetsBtn.innerHTML = '<i class="ph ph-google-logo text-lg"></i> Simpan ke Spreadsheet';
+            }
+        });
+
+    </script>
+</body>
+</html>
