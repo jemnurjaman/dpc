@@ -95,6 +95,11 @@
                     <i class="ph ph-warning-circle text-lg align-middle mr-1"></i> <span id="dashErrorText"></span>
                 </div>
 
+                <div id="settings-area" class="p-4 bg-gray-100 rounded">
+                    <input type="password" id="manualApiKey" placeholder="Masukkan Gemini API Key Anda" class="border p-2 w-full">
+                    <button onclick="saveApiKey()" class="bg-blue-600 text-white p-2 mt-2">Simpan Key</button>
+                </div>
+
                 <!-- Konten Dashboard -->
                 <div id="dashContent" class="hidden">
                     <!-- Kartu Ringkasan -->
@@ -410,7 +415,7 @@
         const searchInput = document.getElementById('searchInput'); // Element Pencarian
 
         // Config
-        const apiKey = "AQ.Ab8RN6LhCCcVmwKYM7JBW1MEQv7q-4I8PQgDjJWSuEb00Vf7Cg"; // API Key otomatis oleh env
+       
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwB4GIxJUj7wUcJz2Ku169AL973oD8hr1ZfBy_M7myVmREPSjQib0d8D17o9uNw2Tyomg/exec";
 
         let currentImageFile = null;
@@ -903,6 +908,20 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                 sheetsBtn.disabled = false;
                 sheetsBtn.innerHTML = '<i class="ph ph-google-logo text-lg"></i> Simpan ke Spreadsheet';
             }
+
+            function saveApiKey() {
+                    const key = document.getElementById('manualApiKey').value;
+                    localStorage.setItem('gemini_api_key', key);
+                    alert("API Key tersimpan!");
+                }
+             
+                async function callGemini(payload) {
+                    const apiKey = localStorage.getItem('gemini_api_key');
+                    if (!apiKey) return alert("Masukkan API Key terlebih dahulu!");
+                
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                    // ... lanjut dengan fetch ...
+                }
         });
 
     </script>
