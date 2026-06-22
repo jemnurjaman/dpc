@@ -10,6 +10,9 @@
     
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <!-- Library untuk Export PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
     <style>
         /* Animasi loading sederhana */
@@ -41,27 +44,55 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: #94a3b8; 
         }
+
+        /* Pengaturan Khusus untuk Mode Cetak (Print) */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #printSection, #printSection * {
+                visibility: visible;
+            }
+            #printSection {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 1.5cm;
+            }
+            .print\:hidden {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-slate-50 min-h-screen font-sans text-slate-800">
 
     <!-- Navbar -->
-    <header class="bg-blue-600 text-white shadow-md">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center gap-3">
-            <i class="ph-fill ph-identification-card text-3xl"></i>
-            <div>
-                <h1 class="text-xl font-bold">DPD PAN OKI</h1>
-                <p class="text-xs text-blue-100">Manajemen Data Pengurus DPC</p>
+    <header class="bg-blue-600 text-white shadow-md print:hidden">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i class="ph-fill ph-identification-card text-3xl"></i>
+                <div>
+                    <h1 class="text-xl font-bold">DPD PAN OKI</h1>
+                    <p class="text-xs text-blue-100">Manajemen Data Pengurus DPC</p>
+                </div>
             </div>
+            <!-- Tombol Pengaturan API -->
+            <button onclick="openApiModal()" class="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 px-3 py-2 rounded-lg text-sm font-medium transition-colors border border-blue-500 shadow-sm">
+                <i class="ph-fill ph-lock-key"></i> <span class="hidden sm:inline">Set API Key</span>
+            </button>
         </div>
     </header>
 
     <!-- Navigation Tabs -->
-    <nav class="bg-blue-700 text-white shadow-inner">
+    <nav class="bg-blue-700 text-white shadow-inner print:hidden">
         <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto custom-scrollbar">
             <button id="tabDashboard" class="py-3 px-6 font-semibold border-b-4 border-transparent text-blue-200 hover:text-white transition-colors whitespace-nowrap">Dashboard</button>
             <button id="tabScan" class="py-3 px-6 font-semibold border-b-4 border-white transition-colors whitespace-nowrap">Input</button>
             <button id="tabSheet" class="py-3 px-6 font-semibold border-b-4 border-transparent text-blue-200 hover:text-white transition-colors whitespace-nowrap">Rekapitulasi Data</button>
+            <button id="tabCetak" class="py-3 px-6 font-semibold border-b-4 border-transparent text-blue-200 hover:text-white transition-colors whitespace-nowrap">Cetak SK</button>
         </div>
     </nav>
 
@@ -70,7 +101,7 @@
         <!-- ======================= -->
         <!--   TAMPILAN DASHBOARD    -->
         <!-- ======================= -->
-        <div id="dashboardView" class="hidden space-y-6">
+        <div id="dashboardView" class="hidden space-y-6 print:hidden">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
@@ -84,25 +115,16 @@
                     </button>
                 </div>
 
-                <!-- Loading State Dashboard -->
                 <div id="dashLoading" class="text-center py-12 text-slate-500 hidden flex-col items-center justify-center gap-3">
                     <div class="loader" style="border-top-color: #2563eb;"></div>
                     <span>Menganalisis data Pengurus DPC</span>
                 </div>
                 
-                <!-- Error State Dashboard -->
                 <div id="dashError" class="hidden bg-red-50 text-red-700 p-4 rounded-lg border border-red-200 mb-6 text-sm">
                     <i class="ph ph-warning-circle text-lg align-middle mr-1"></i> <span id="dashErrorText"></span>
                 </div>
 
-                <div id="settings-area" class="p-4 bg-gray-100 rounded">
-                    <input type="password" id="manualApiKey" placeholder="Masukkan Gemini API Key Anda" class="border p-2 w-full">
-                    <button onclick="saveApiKey()" class="bg-blue-600 text-white p-2 mt-2">Simpan Key</button>
-                </div>
-
-                <!-- Konten Dashboard -->
                 <div id="dashContent" class="hidden">
-                    <!-- Kartu Ringkasan -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col items-center justify-center text-center">
                             <i class="ph ph-users text-3xl text-slate-400 mb-2"></i>
@@ -126,7 +148,6 @@
                         </div>
                     </div>
 
-                    <!-- Tabel Per Kecamatan -->
                     <h3 class="text-lg font-bold mb-4 border-b pb-2 text-slate-700">Sebaran & Kuota Per Kecamatan</h3>
                     <div class="overflow-x-auto border border-slate-200 rounded-lg">
                         <table class="w-full text-sm text-left border-collapse">
@@ -140,12 +161,10 @@
                                 </tr>
                             </thead>
                             <tbody id="dsTableBody" class="divide-y divide-slate-100 text-slate-600">
-                                <!-- Render by JS -->
                             </tbody>
                         </table>
                     </div>
 
-                    <!-- ✨ Fitur Gemini API: Analisis Insight Dashboard -->
                     <div class="mt-8 bg-indigo-50 p-6 rounded-xl border border-indigo-200">
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
@@ -164,8 +183,7 @@
         <!-- ======================= -->
         <!--   TAMPILAN SCAN KTP     -->
         <!-- ======================= -->
-        <div id="scanView" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <!-- Panel Kiri: Upload & Preview -->
+        <div id="scanView" class="grid grid-cols-1 lg:grid-cols-12 gap-8 print:hidden">
             <div class="lg:col-span-5 space-y-6">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                     <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -173,7 +191,6 @@
                         Upload Gambar KTP
                     </h2>
                     
-                    <!-- Area Upload -->
                     <label for="imageInput" class="block w-full border-2 border-dashed border-slate-300 rounded-lg p-8 text-center cursor-pointer hover:bg-slate-50 hover:border-blue-400 transition-colors">
                         <i class="ph ph-image text-4xl text-slate-400 mb-2"></i>
                         <p class="text-sm font-medium text-slate-600">Klik untuk memilih gambar KTP</p>
@@ -181,20 +198,17 @@
                         <input type="file" id="imageInput" accept="image/*" class="hidden">
                     </label>
 
-                    <!-- Area Preview -->
                     <div id="previewContainer" class="hidden mt-4">
                         <p class="text-xs font-medium text-slate-500 mb-2">Pratinjau Gambar:</p>
                         <div class="relative rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex justify-center">
                             <img id="imagePreview" src="" alt="Preview KTP" class="w-full h-auto max-h-64 object-contain">
                         </div>
-                        
                         <button id="scanBtn" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-md">
                             <i class="ph ph-magic-wand text-xl"></i>
                             Pindai dengan AI Vision
                         </button>
                     </div>
 
-                    <!-- Status & Progress -->
                     <div id="statusContainer" class="hidden mt-4 p-4 rounded-lg bg-purple-50 border border-purple-100 text-purple-800 text-sm">
                         <div class="flex items-center gap-3">
                             <div class="loader" style="border-top-color: #9333ea;"></div>
@@ -202,10 +216,8 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
-            <!-- Panel Kanan: Form Data & Ekspor -->
             <div class="lg:col-span-7">
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -217,7 +229,6 @@
                             <p class="text-sm text-slate-500">Koreksi data di bawah ini jika terdapat kesalahan.</p>
                         </div>
                         <div class="flex flex-wrap justify-end gap-2">
-                          
                             <button id="sheetsBtn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                 <i class="ph ph-google-logo text-lg"></i>
                                 Simpan ke Spreadsheet
@@ -225,10 +236,8 @@
                         </div>
                     </div>
 
-                    <!-- Notifikasi Toast -->
                     <div id="toastAlert" class="hidden mb-4 p-3 rounded-lg text-sm font-medium transition-all"></div>
 
-                    <!-- Form KTP -->
                     <form id="ktpForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="md:col-span-2">
                             <label class="block text-xs font-semibold text-slate-600 mb-1">NIK</label>
@@ -270,6 +279,32 @@
                             <input type="text" id="f_kecamatan" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
                         </div>
 
+                        <!-- Dropdown Jabatan -->
+                        <div class="md:col-span-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                            <label class="block text-xs font-bold text-blue-800 mb-1">Jabatan Partai (Sesuai Struktur DPC)</label>
+                            <select id="f_jabatan" class="w-full px-3 py-2 border border-blue-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                                <option value="">-- Pilih Jabatan --</option>
+                                <optgroup label="I. Majelis Penasehat Partai Cabang">
+                                    <option value="Ketua MPP">Ketua MPP</option>
+                                </optgroup>
+                                <optgroup label="II. Pengurus Harian">
+                                    <option value="Ketua">Ketua</option>
+                                    <option value="Wakil Ketua">Wakil Ketua</option>
+                                    <option value="Sekretaris">Sekretaris</option>
+                                    <option value="Wakil Sekretaris">Wakil Sekretaris</option>
+                                    <option value="Bendahara">Bendahara</option>
+                                    <option value="Wakil Bendahara">Wakil Bendahara</option>
+                                </optgroup>
+                                <optgroup label="III. Badan-Badan (Ketua)">
+                                    <option value="Ketua POK">Ketua POK</option>
+                                    <option value="Ketua Perkaderan">Ketua Perkaderan</option>
+                                    <option value="Ketua Bappilu">Ketua Bappilu</option>
+                                    <option value="Ketua Perempuan & Anak">Ketua Pemberdayaan Perempuan & Anak</option>
+                                    <option value="Ketua Saksi Cabang">Ketua Saksi Cabang</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
                         <div>
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Agama</label>
                             <input type="text" id="f_agama" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
@@ -289,11 +324,6 @@
                             <label class="block text-xs font-semibold text-slate-600 mb-1">Kewarganegaraan</label>
                             <input type="text" id="f_warga" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase">
                         </div>
-
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-600 mb-1">Berlaku Hingga</label>
-                            <input type="text" id="f_berlaku" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 uppercase" value="SEUMUR HIDUP">
-                        </div>
                     </form>
                 </div>
             </div>
@@ -302,14 +332,13 @@
         <!-- ======================= -->
         <!--  TAMPILAN SPREADSHEET   -->
         <!-- ======================= -->
-        <div id="sheetView" class="hidden">
+        <div id="sheetView" class="hidden print:hidden">
             <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                 <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                     <h2 class="text-xl font-bold flex items-center gap-2">
                         <i class="ph ph-table text-emerald-600"></i> Rekapitulasi Data
                     </h2>
                     <div class="flex flex-wrap items-center gap-3">
-                        <!-- Fitur Pencarian Baru -->
                         <div class="relative">
                             <input type="text" id="searchInput" placeholder="Cari nama pengurus..." class="border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-emerald-500 w-full sm:w-56 transition-all" oninput="renderSheetTable()">
                             <i class="ph ph-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-base"></i>
@@ -331,12 +360,8 @@
                 </div>
                 <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-lg">
                     <table class="w-full text-sm text-left border-collapse whitespace-nowrap">
-                        <thead id="sheetTableHead" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold">
-                            <!-- Header tabel dimuat via JS -->
-                        </thead>
-                        <tbody id="sheetTableBody" class="divide-y divide-slate-100 text-slate-600">
-                            <!-- Data dimuat via JS -->
-                        </tbody>
+                        <thead id="sheetTableHead" class="bg-slate-100 border-b border-slate-200 text-slate-700 font-semibold"></thead>
+                        <tbody id="sheetTableBody" class="divide-y divide-slate-100 text-slate-600"></tbody>
                     </table>
                     <div id="sheetLoading" class="text-center py-12 text-slate-500 hidden flex-col items-center justify-center gap-3">
                         <div class="loader" style="border-top-color: #10b981;"></div>
@@ -346,37 +371,108 @@
             </div>
         </div>
 
+        <!-- ======================= -->
+        <!--  TAMPILAN CETAK SK      -->
+        <!-- ======================= -->
+        <div id="cetakView" class="hidden space-y-6">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 print:hidden">
+                <h2 class="text-xl font-bold flex items-center gap-2 mb-4">
+                    <i class="ph ph-printer text-blue-600"></i> Ekspor / Cetak Susunan Pengurus DPC
+                </h2>
+                <div class="flex flex-col sm:flex-row gap-4 items-end">
+                    <div class="flex-1 w-full">
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Pilih Kecamatan</label>
+                        <select id="cetakKecamatan" class="w-full border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50" onchange="generatePreviewCetak()">
+                            <option value="">-- Menunggu Data / Pilih Kecamatan --</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button id="btnPrint" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2 font-medium w-full sm:w-auto shadow-sm">
+                            <i class="ph ph-printer"></i> Cetak Print
+                        </button>
+                        <button id="btnExportPDF" class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 flex items-center justify-center gap-2 font-medium w-full sm:w-auto shadow-sm">
+                            <i class="ph ph-file-pdf"></i> Ekspor PDF
+                        </button>
+                    </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-3">Sistem mencocokkan nama pengurus dengan jabatannya berdasarkan data kolom "Jabatan" pada spreadsheet.</p>
+            </div>
+
+            <!-- Area Render Dokumen -->
+            <div id="printContainer" class="bg-white p-6 sm:p-12 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+                <div id="printSection" class="w-full max-w-3xl mx-auto text-black leading-relaxed" style="font-family: 'Times New Roman', Times, serif; background-color: white;">
+                    
+                    <div class="text-center font-bold text-lg mb-8">
+                        <p>SUSUNAN PENGURUS</p>
+                        <p>DEWAN PIMPINAN CABANG PARTAI AMANAT NASIONAL</p>
+                        <p>KECAMATAN <span id="printKecName" class="uppercase">...................</span> KABUPATEN OGAN KOMERING ILIR</p>
+                        <p>PROVINSI SUMATERA SELATAN PERIODE 2024-2029</p>
+                    </div>
+
+                    <table class="w-full text-base mb-4 leading-loose">
+                        <tr><td colspan="3" class="font-bold pb-2">I. MAJELIS PENASEHAT PARTAI CABANG</td></tr>
+                        <tr><td class="w-8"></td><td class="w-56">Ketua</td><td>: <span id="p_mpp" class="font-bold uppercase">-</span></td></tr>
+                        
+                        <tr><td colspan="3" class="font-bold pt-4 pb-2">II. PENGURUS HARIAN</td></tr>
+                        <tr><td></td><td>Ketua</td><td>: <span id="p_ketua" class="font-bold uppercase">-</span></td></tr>
+                        <tr><td></td><td>Wakil Ketua</td><td>: <span id="p_wakil_ketua" class="font-bold uppercase">-</span></td></tr>
+                        <tr><td></td><td>Sekretaris</td><td>: <span id="p_sekretaris" class="font-bold uppercase">-</span></td></tr>
+                        <tr><td></td><td>Wakil Sekretaris</td><td>: <span id="p_wakil_sekretaris" class="font-bold uppercase">-</span></td></tr>
+                        <tr><td></td><td>Bendahara</td><td>: <span id="p_bendahara" class="font-bold uppercase">-</span></td></tr>
+                        <tr><td></td><td>Wakil Bendahara</td><td>: <span id="p_wakil_bendahara" class="font-bold uppercase">-</span></td></tr>
+
+                        <tr><td colspan="3" class="font-bold pt-4 pb-2">III. BADAN-BADAN</td></tr>
+                        <tr><td colspan="3" class="font-bold pl-8">BADAN PEMBINAAN ORGANISASI DAN KEANGGOTAAN (POK)</td></tr>
+                        <tr><td></td><td class="pl-8">Ketua</td><td>: <span id="p_pok" class="font-bold uppercase">-</span></td></tr>
+                        
+                        <tr><td colspan="3" class="font-bold pl-8 pt-3">BADAN PERKADERAN</td></tr>
+                        <tr><td></td><td class="pl-8">Ketua</td><td>: <span id="p_perkaderan" class="font-bold uppercase">-</span></td></tr>
+                        
+                        <tr><td colspan="3" class="font-bold pl-8 pt-3">BADAN PEMENANGAN PEMILU</td></tr>
+                        <tr><td></td><td class="pl-8">Ketua</td><td>: <span id="p_bappilu" class="font-bold uppercase">-</span></td></tr>
+                        
+                        <tr><td colspan="3" class="font-bold pl-8 pt-3">BADAN PEMBERDAYAAN PEREMPUAN DAN PERLINDUNGAN ANAK</td></tr>
+                        <tr><td></td><td class="pl-8">Ketua</td><td>: <span id="p_perempuan" class="font-bold uppercase">-</span></td></tr>
+                        
+                        <tr><td colspan="3" class="font-bold pl-8 pt-3">BADAN SAKSI CABANG</td></tr>
+                        <tr><td></td><td class="pl-8">Ketua</td><td>: <span id="p_saksi" class="font-bold uppercase">-</span></td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
     </main>
 
-    <!-- Modal Buat Pesan WA -->
-    <div id="waModal" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity">
-        <div class="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl m-4">
-            <h3 class="text-xl font-bold mb-2 flex items-center gap-2 text-indigo-900">
-                <i class="ph-fill ph-whatsapp-logo text-green-500"></i> ✨ Draf Pesan Sambutan
+    <!-- Modal Pengaturan API -->
+    <div id="apiModal" class="fixed inset-0 bg-slate-900/50 hidden z-50 flex items-center justify-center backdrop-blur-sm transition-opacity print:hidden">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-xl m-4">
+            <h3 class="text-xl font-bold mb-4 flex items-center gap-2 text-blue-900">
+                <i class="ph-fill ph-lock-key text-blue-600"></i> Pengaturan API Key (Keamanan)
             </h3>
-            <p class="text-xs text-slate-500 mb-4">Pesan ini dibuat otomatis oleh AI berdasarkan data pengurus.</p>
+            <p class="text-sm text-slate-600 mb-4">Untuk keamanan jika di-*deploy* ke GitHub, harap masukkan Gemini API Key Anda secara manual. Key ini hanya disimpan di browser Anda (lokal).</p>
             
-            <textarea id="waMessageContent" rows="6" class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm mb-4 resize-none" placeholder="Membuat pesan..."></textarea>
+            <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm mb-4">
             
             <div class="flex justify-end gap-3">
-                <button id="closeWaModalBtn" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Tutup</button>
-                <button id="copyWaBtn" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2">
-                    <i class="ph ph-copy"></i> Salin Teks
+                <button onclick="closeApiModal()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">Tutup</button>
+                <button id="saveApiBtn" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+                    Simpan API Key
                 </button>
             </div>
         </div>
     </div>
 
     <script>
-        // DOM Elements - Tabs
+        // DOM Elements
         const tabDashboard = document.getElementById('tabDashboard');
         const tabScan = document.getElementById('tabScan');
         const tabSheet = document.getElementById('tabSheet');
+        const tabCetak = document.getElementById('tabCetak');
+        
         const dashboardView = document.getElementById('dashboardView');
         const scanView = document.getElementById('scanView');
         const sheetView = document.getElementById('sheetView');
+        const cetakView = document.getElementById('cetakView');
 
-        // DOM Elements - KTP & AI
         const imageInput = document.getElementById('imageInput');
         const previewContainer = document.getElementById('previewContainer');
         const imagePreview = document.getElementById('imagePreview');
@@ -386,7 +482,6 @@
         const sheetsBtn = document.getElementById('sheetsBtn');
         const toastAlert = document.getElementById('toastAlert');
 
-        // DOM Elements - Dashboard
         const dashLoading = document.getElementById('dashLoading');
         const dashContent = document.getElementById('dashContent');
         const dashError = document.getElementById('dashError');
@@ -398,41 +493,74 @@
         const dsPctP = document.getElementById('dsPctP');
         const dsTableBody = document.getElementById('dsTableBody');
 
-        // DOM Elements - AI Insight & WA
         const generateInsightBtn = document.getElementById('generateInsightBtn');
         const aiInsightResult = document.getElementById('aiInsightResult');
-        const waModal = document.getElementById('waModal');
-        const waMessageContent = document.getElementById('waMessageContent');
-        const closeWaModalBtn = document.getElementById('closeWaModalBtn');
-        const copyWaBtn = document.getElementById('copyWaBtn');
 
-        // DOM Elements - Spreadsheet View
         const refreshSheetBtn = document.getElementById('refreshSheetBtn');
         const sheetTableHead = document.getElementById('sheetTableHead');
         const sheetTableBody = document.getElementById('sheetTableBody');
         const sheetLoading = document.getElementById('sheetLoading');
         const limitSelect = document.getElementById('limitSelect');
-        const searchInput = document.getElementById('searchInput'); // Element Pencarian
+        const searchInput = document.getElementById('searchInput');
 
-        // Config
-       
+        const cetakKecamatan = document.getElementById('cetakKecamatan');
+        const btnPrint = document.getElementById('btnPrint');
+        const btnExportPDF = document.getElementById('btnExportPDF');
+
+        // Config Google Apps Script URL
         const appsScriptUrl = "https://script.google.com/macros/s/AKfycbwB4GIxJUj7wUcJz2Ku169AL973oD8hr1ZfBy_M7myVmREPSjQib0d8D17o9uNw2Tyomg/exec";
 
         let currentImageFile = null;
         let base64ImageData = null;
         let globalSheetData = null;
 
+        // ------------- API KEY MANAGEMENT -------------
+        // Fungsi cerdas untuk menentukan model AI mana yang digunakan
+        function getApiConfig() {
+            const storedKey = localStorage.getItem('gemini_api_key') || '';
+            // Jika ada key dari pengguna (GitHub pages), gunakan model publik (1.5-flash). 
+            // Jika kosong (dalam mode Canvas internal), gunakan model preview.
+            const modelName = storedKey ? 'gemini-1.5-flash' : 'gemini-2.5-flash-preview-09-2025';
+            return { key: storedKey, model: modelName };
+        }
+
+        function openApiModal() {
+            document.getElementById('apiKeyInput').value = localStorage.getItem('gemini_api_key') || '';
+            document.getElementById('apiModal').classList.remove('hidden');
+        }
+
+        function closeApiModal() {
+            document.getElementById('apiModal').classList.add('hidden');
+        }
+
+        document.getElementById('saveApiBtn').addEventListener('click', () => {
+            const key = document.getElementById('apiKeyInput').value.trim();
+            if(key) {
+                localStorage.setItem('gemini_api_key', key);
+                showToast("API Key berhasil disimpan ke penyimpanan lokal!", "success");
+                closeApiModal();
+            } else {
+                showToast("API Key tidak boleh kosong!", "error");
+            }
+        });
+
+        // Tampilkan modal pengaturan API otomatis jika di-deploy ke hosting seperti GitHub
+        window.addEventListener('DOMContentLoaded', () => {
+            // Mengecek apakah aplikasi berjalan di iframe (Canvas) atau di hosting mandiri (GitHub Pages)
+            const isHosted = window.self === window.top;
+            if (isHosted && !localStorage.getItem('gemini_api_key')) {
+                setTimeout(openApiModal, 1000);
+            }
+        });
+
         // ------------- TAB NAVIGATION -------------
         function switchTab(activeTabId) {
-            // Reset Tab UI
-            [tabDashboard, tabScan, tabSheet].forEach(tab => {
+            [tabDashboard, tabScan, tabSheet, tabCetak].forEach(tab => {
                 tab.classList.add('border-transparent', 'text-blue-200');
                 tab.classList.remove('border-white', 'text-white');
             });
-            // Hide Views
-            [dashboardView, scanView, sheetView].forEach(view => view.classList.add('hidden'));
+            [dashboardView, scanView, sheetView, cetakView].forEach(view => view.classList.add('hidden'));
 
-            // Activate Tab
             if(activeTabId === 'tabDashboard') {
                 tabDashboard.classList.remove('border-transparent', 'text-blue-200');
                 tabDashboard.classList.add('border-white', 'text-white');
@@ -447,12 +575,18 @@
                 tabSheet.classList.add('border-white', 'text-white');
                 sheetView.classList.remove('hidden');
                 loadSheetData();
+            } else if(activeTabId === 'tabCetak') {
+                tabCetak.classList.remove('border-transparent', 'text-blue-200');
+                tabCetak.classList.add('border-white', 'text-white');
+                cetakView.classList.remove('hidden');
+                initCetakView();
             }
         }
 
         tabDashboard.addEventListener('click', () => switchTab('tabDashboard'));
         tabScan.addEventListener('click', () => switchTab('tabScan'));
         tabSheet.addEventListener('click', () => switchTab('tabSheet'));
+        tabCetak.addEventListener('click', () => switchTab('tabCetak'));
 
         // Helper: Toast Alert
         function showToast(message, type = 'success') {
@@ -463,7 +597,7 @@
             else if (type === 'error') toastAlert.classList.add('bg-red-100', 'text-red-800', 'border', 'border-red-200');
             else toastAlert.classList.add('bg-blue-100', 'text-blue-800', 'border', 'border-blue-200');
 
-            setTimeout(() => toastAlert.classList.add('hidden'), 5000);
+            setTimeout(() => toastAlert.classList.add('hidden'), 3500);
         }
 
         // ------------- DATA FETCHING -------------
@@ -482,13 +616,12 @@
             dashError.classList.add('hidden');
             dashLoading.classList.remove('hidden');
             dashLoading.classList.add('flex');
-            aiInsightResult.classList.add('hidden'); // Sembunyikan insight saat refresh
+            aiInsightResult.classList.add('hidden');
 
             try {
                 const data = await fetchSpreadsheetData();
                 renderDashboard(data);
             } catch(e) {
-                console.error(e);
                 dashErrorText.textContent = e.message || "Gagal memuat data statistik.";
                 dashError.classList.remove('hidden');
             } finally {
@@ -501,47 +634,31 @@
 
         function renderDashboard(data) {
             dashContent.classList.remove('hidden');
-            if(!data || data.length <= 1) {
-                // Tidak ada baris data selain header
-                return;
-            }
+            if(!data || data.length <= 1) return;
 
             const headers = data[0].map(h => (h || '').toString().toLowerCase());
-            // Mencari indeks kolom Jenis Kelamin dan Kecamatan secara otomatis
             let jkIdx = headers.findIndex(h => h.includes('kelamin') || h.includes('jk') || h.includes('jenis'));
             let kecIdx = headers.findIndex(h => h.includes('kecamatan') || h.includes('kec'));
 
-            // Fallback index standar jika string header berbeda
             if(jkIdx === -1) jkIdx = 4; 
             if(kecIdx === -1) kecIdx = 8; 
 
-            let total = 0;
-            let totalL = 0;
-            let totalP = 0;
-            let perKec = {};
+            let total = 0, totalL = 0, totalP = 0, perKec = {};
 
-            // Proses baris per baris
             for(let i = 1; i < data.length; i++) {
                 const row = data[i];
                 if(!row || row.length === 0) continue;
-                // Asumsi data valid minimal memiliki NIK / Nama di arraynya
                 if(!row[1] && !row[2]) continue; 
 
                 let jk = (row[jkIdx] || '').toString().toUpperCase();
                 let kec = (row[kecIdx] || '').toString().toUpperCase() || 'TIDAK DIKETAHUI';
                 
                 total++;
-                if(jk.includes('PEREMPUAN')) {
-                    totalP++;
-                } else {
-                    totalL++;
-                }
+                if(jk.includes('PEREMPUAN')) totalP++; else totalL++;
 
-                // Pengelompokan Kecamatan
                 if(!perKec[kec]) perKec[kec] = { total: 0, L: 0, P: 0 };
                 perKec[kec].total++;
-                if(jk.includes('PEREMPUAN')) perKec[kec].P++;
-                else perKec[kec].L++;
+                if(jk.includes('PEREMPUAN')) perKec[kec].P++; else perKec[kec].L++;
             }
 
             const pctTotal = total > 0 ? ((totalP / total) * 100).toFixed(1) : 0;
@@ -551,13 +668,11 @@
             dsPerempuan.textContent = totalP;
             dsPctP.textContent = pctTotal + '%';
 
-            // Merender Tabel Per Kecamatan
             let tbodyHtml = '';
             for(let kec in perKec) {
                 let s = perKec[kec];
                 let pct = s.total > 0 ? ((s.P / s.total) * 100).toFixed(1) : 0;
-                let isPassed = pct >= 30; // Kriteria 30% perempuan
-                let badgeClass = isPassed ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-red-100 text-red-800 border-red-200';
+                let badgeClass = pct >= 30 ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'bg-red-100 text-red-800 border-red-200';
 
                 tbodyHtml += `
                     <tr class="hover:bg-slate-50 border-b border-slate-100 transition-colors">
@@ -565,24 +680,13 @@
                         <td class="px-4 py-3 text-center text-slate-700 font-semibold">${s.total}</td>
                         <td class="px-4 py-3 text-center text-blue-600">${s.L}</td>
                         <td class="px-4 py-3 text-center text-pink-600">${s.P}</td>
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-block border px-2 py-1 rounded-md text-xs font-bold ${badgeClass}">
-                                ${pct}%
-                            </span>
-                        </td>
+                        <td class="px-4 py-3 text-center"><span class="inline-block border px-2 py-1 rounded-md text-xs font-bold ${badgeClass}">${pct}%</span></td>
                     </tr>
                 `;
             }
-            if(Object.keys(perKec).length === 0) {
-                tbodyHtml = `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Belum ada sebaran wilayah</td></tr>`;
-            }
-
+            if(Object.keys(perKec).length === 0) tbodyHtml = `<tr><td colspan="5" class="px-4 py-6 text-center text-slate-500">Belum ada sebaran wilayah</td></tr>`;
             dsTableBody.innerHTML = tbodyHtml;
-            
-            // Simpan data ringkasan ke elemen global untuk diakses AI
-            window.dashboardSummary = {
-                total, totalL, totalP, pctTotal, perKec
-            };
+            window.dashboardSummary = { total, totalL, totalP, pctTotal, perKec };
         }
 
         // ------------- SPREADSHEET TABLE LOGIC -------------
@@ -593,9 +697,8 @@
             sheetLoading.classList.add('flex');
 
             try {
-                const data = await fetchSpreadsheetData();
-                if (data && data.length > 0) {
-                    globalSheetData = data;
+                if(!globalSheetData) await fetchSpreadsheetData();
+                if (globalSheetData && globalSheetData.length > 0) {
                     renderSheetTable();
                 } else {
                     sheetTableBody.innerHTML = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada data di Spreadsheet.</td></tr>`;
@@ -614,60 +717,46 @@
 
             const limitVal = document.getElementById('limitSelect').value;
             const limit = limitVal === 'all' ? globalSheetData.length - 1 : parseInt(limitVal);
-            
-            // Ambil query pencarian
             const searchQuery = document.getElementById('searchInput') ? document.getElementById('searchInput').value.toLowerCase().trim() : '';
 
             const headers = globalSheetData[0];
-            // Mencari otomatis letak kolom NIK dan Nama
             const nikIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nik'));
             const namaIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nama'));
-
-            // Merender Header Tabel - Ubah kolom 0 menjadi Nomor Urut
-            let headerHtml = '<tr>';
-            headerHtml += `<th class="px-4 py-3 text-center">No.</th>`;
-            for(let j = 1; j < headers.length; j++) {
-                headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
-            }
+            
+            let headerHtml = '<tr><th class="px-4 py-3 text-center">No.</th>';
+            for(let j = 1; j < headers.length; j++) headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
             headerHtml += '</tr>';
             sheetTableHead.innerHTML = headerHtml;
 
-            // Merender Body Tabel
             let bodyHtml = '';
             let count = 0;
             
             for (let i = 1; i < globalSheetData.length; i++) {
-                if (count >= limit) break; // Berhenti jika mencapai limit yang dipilih
+                if (count >= limit) break;
 
                 const row = globalSheetData[i];
-                // Cek jika baris kosong agar nomor tidak maju
                 if(!row || (!row[1] && !row[2])) continue;
 
-                // Logika Filter Pencarian Berdasarkan Nama
                 if (searchQuery) {
                     let searchTarget = namaIdx !== -1 ? (row[namaIdx] || '').toString().toLowerCase() : (row[2] || '').toString().toLowerCase();
-                    if (!searchTarget.includes(searchQuery)) {
-                        continue; // Lewati baris ini jika nama tidak cocok dengan pencarian
-                    }
+                    if (!searchTarget.includes(searchQuery)) continue;
                 }
 
                 bodyHtml += '<tr class="hover:bg-slate-50">';
-                // Kolom Waktu diganti menjadi Nomor Urut hasil filter
                 bodyHtml += `<td class="px-4 py-2 border-t border-slate-100 text-center font-medium text-slate-500">${count + 1}</td>`;
                 
                 for (let j = 1; j < row.length; j++) { 
                     let cellData = row[j] || '-';
-                    
-                    // Sembunyikan 6 Angka Terakhir NIK dengan 5 Bintang
-                    if (j === nikIdx && cellData !== '-') {
-                        let nikStr = cellData.toString();
-                        if (nikStr.length > 6) {
-                            cellData = nikStr.slice(0, -6) + '*****';
+                    if (cellData !== '-') {
+                        // Hanya NIK yang disensor di sini
+                        if (j === nikIdx) {
+                            let str = cellData.toString();
+                            if (str.length > 6) cellData = str.slice(0, -6) + '*****';
+                        } 
+                        else if (typeof cellData === 'string' && cellData.match(/^\d{4}-\d{2}-\d{2}T/)) {
+                            cellData = new Date(cellData).toLocaleString('id-ID');
                         }
-                    } else if (typeof cellData === 'string' && cellData.match(/^\d{4}-\d{2}-\d{2}T/)) {
-                        cellData = new Date(cellData).toLocaleString('id-ID');
                     }
-
                     bodyHtml += `<td class="px-4 py-2 border-t border-slate-100">${cellData}</td>`; 
                 }
                 bodyHtml += '</tr>';
@@ -675,21 +764,132 @@
             }
 
             if (count === 0) {
-                if (searchQuery) {
-                    bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada pengurus dengan nama "<b>${searchQuery}</b>".</td></tr>`;
-                } else {
-                    bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk ditampilkan.</td></tr>`;
-                }
+                if (searchQuery) bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada pengurus dengan nama "<b>${searchQuery}</b>".</td></tr>`;
+                else bodyHtml = `<tr><td colspan="100%" class="px-4 py-8 text-center text-slate-500">Tidak ada data untuk ditampilkan.</td></tr>`;
             }
 
             sheetTableBody.innerHTML = bodyHtml;
         }
 
-        refreshSheetBtn.addEventListener('click', loadSheetData);
+        refreshSheetBtn.addEventListener('click', async () => {
+            globalSheetData = null; 
+            loadSheetData();
+        });
+
+        // ------------- CETAK & EXPORT PDF LOGIC -------------
+        async function initCetakView() {
+            if(!globalSheetData) {
+                try {
+                    await fetchSpreadsheetData();
+                } catch(e) {
+                    showToast("Gagal memuat data untuk Cetak SK", "error");
+                    return;
+                }
+            }
+            
+            const headers = globalSheetData[0].map(h => (h||'').toString().toLowerCase());
+            let kecIdx = headers.findIndex(h => h.includes('kecamatan') || h.includes('kec'));
+            if(kecIdx === -1) kecIdx = 8; 
+
+            let kecSet = new Set();
+            for(let i=1; i<globalSheetData.length; i++) {
+                if(!globalSheetData[i]) continue;
+                let kec = (globalSheetData[i][kecIdx] || '').toString().toUpperCase().trim();
+                if(kec) kecSet.add(kec);
+            }
+
+            cetakKecamatan.innerHTML = '<option value="">-- Pilih Kecamatan --</option>';
+            Array.from(kecSet).sort().forEach(kec => {
+                cetakKecamatan.innerHTML += `<option value="${kec}">${kec}</option>`;
+            });
+        }
+
+        function generatePreviewCetak() {
+            const selectedKec = cetakKecamatan.value;
+            document.getElementById('printKecName').textContent = selectedKec || '...................';
+
+            const fields = ['p_mpp', 'p_ketua', 'p_wakil_ketua', 'p_sekretaris', 'p_wakil_sekretaris', 'p_bendahara', 'p_wakil_bendahara', 'p_pok', 'p_perkaderan', 'p_bappilu', 'p_perempuan', 'p_saksi'];
+            fields.forEach(f => document.getElementById(f).textContent = '-');
+
+            if(!selectedKec || !globalSheetData) return;
+
+            const headers = globalSheetData[0].map(h => (h||'').toString().toLowerCase());
+            let kecIdx = headers.findIndex(h => h.includes('kecamatan') || h.includes('kec'));
+            let namaIdx = headers.findIndex(h => h.includes('nama'));
+            let jabIdx = headers.findIndex(h => h.includes('jabatan') || h.includes('posisi'));
+            
+            if(kecIdx === -1) kecIdx = 8;
+            if(namaIdx === -1) namaIdx = 2;
+
+            let rowsKec = globalSheetData.slice(1).filter(row => row && (row[kecIdx]||'').toString().toUpperCase().trim() === selectedKec);
+
+            if (jabIdx !== -1) {
+                let result = { mpp: '-', ketua: '-', wakil_ketua: '-', sekretaris: '-', wakil_sekretaris: '-', bendahara: '-', wakil_bendahara: '-', pok: '-', perkaderan: '-', bappilu: '-', perempuan: '-', saksi: '-' };
+
+                rowsKec.forEach(row => {
+                    let jab = (row[jabIdx] || '').toString().toLowerCase().trim();
+                    let nama = row[namaIdx] || '-';
+                    
+                    if (jab.includes('mpp') || jab.includes('penasehat')) result.mpp = nama;
+                    else if (jab.includes('wakil ketua')) result.wakil_ketua = nama;
+                    else if (jab === 'ketua' || jab.includes('ketua harian') || jab.includes('ketua dpc')) result.ketua = nama;
+                    else if (jab.includes('wakil sekretaris')) result.wakil_sekretaris = nama;
+                    else if (jab.includes('sekretaris')) result.sekretaris = nama;
+                    else if (jab.includes('wakil bendahara')) result.wakil_bendahara = nama;
+                    else if (jab.includes('bendahara')) result.bendahara = nama;
+                    else if (jab.includes('pok') || jab.includes('organisasi')) result.pok = nama;
+                    else if (jab.includes('kader') || jab.includes('perkaderan')) result.perkaderan = nama;
+                    else if (jab.includes('pemilu') || jab.includes('bappilu')) result.bappilu = nama;
+                    else if (jab.includes('perempuan') || jab.includes('pemberdayaan')) result.perempuan = nama;
+                    else if (jab.includes('saksi')) result.saksi = nama;
+                });
+
+                document.getElementById('p_mpp').textContent = result.mpp;
+                document.getElementById('p_ketua').textContent = result.ketua;
+                document.getElementById('p_wakil_ketua').textContent = result.wakil_ketua;
+                document.getElementById('p_sekretaris').textContent = result.sekretaris;
+                document.getElementById('p_wakil_sekretaris').textContent = result.wakil_sekretaris;
+                document.getElementById('p_bendahara').textContent = result.bendahara;
+                document.getElementById('p_wakil_bendahara').textContent = result.wakil_bendahara;
+                document.getElementById('p_pok').textContent = result.pok;
+                document.getElementById('p_perkaderan').textContent = result.perkaderan;
+                document.getElementById('p_bappilu').textContent = result.bappilu;
+                document.getElementById('p_perempuan').textContent = result.perempuan;
+                document.getElementById('p_saksi').textContent = result.saksi;
+            } else {
+                showToast("Kolom 'Jabatan' tidak ditemukan pada Spreadsheet.", "error");
+            }
+        }
+
+        btnPrint.addEventListener('click', () => {
+            if(!cetakKecamatan.value) {
+                showToast("Pilih Kecamatan terlebih dahulu", "error");
+                return;
+            }
+            window.print();
+        });
+
+        btnExportPDF.addEventListener('click', () => {
+            if(!cetakKecamatan.value) {
+                showToast("Pilih Kecamatan terlebih dahulu sebelum Export PDF", "error");
+                return;
+            }
+            
+            const element = document.getElementById('printSection');
+            const opt = {
+                margin:       [0.5, 0.5, 0.5, 0.5],
+                filename:     `SK_PENGURUS_DPC_PAN_${cetakKecamatan.value.toUpperCase()}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Memanggil pustaka html2pdf
+            html2pdf().set(opt).from(element).save();
+        });
 
 
         // ------------- KTP SCAN AI LOGIC -------------
-        // Handle Image Upload & Preview
         imageInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -701,19 +901,21 @@
                     previewContainer.classList.remove('hidden');
                     statusContainer.classList.add('hidden');
                     document.getElementById('ktpForm').reset();
-                    document.getElementById('f_berlaku').value = "SEUMUR HIDUP";
                 };
                 reader.readAsDataURL(file);
             }
         });
 
-        // Retry wrapper for Gemini API
-        const fetchWithRetry = async (url, options, retries = 5, delay = 1000) => {
+        const fetchWithRetry = async (url, options, retries = 3, delay = 1000) => {
             for (let i = 0; i < retries; i++) {
                 try {
                     const response = await fetch(url, options);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    return await response.json();
+                    const data = await response.json();
+                    if (!response.ok) {
+                        if (data.error) throw new Error(data.error.message);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return data;
                 } catch (e) {
                     if (i === retries - 1) throw e;
                     await new Promise(res => setTimeout(res, delay));
@@ -724,6 +926,16 @@
 
         scanBtn.addEventListener('click', async () => {
             if (!base64ImageData) return;
+            
+            const apiConfig = getApiConfig();
+            
+            // Verifikasi hanya bila aplikasi di-host di luar Canvas dan kunci kosong
+            if(window.self === window.top && !apiConfig.key) {
+                showToast("Anda harus mengatur API Key terlebih dahulu!", "error");
+                openApiModal();
+                return;
+            }
+
             scanBtn.disabled = true;
             scanBtn.classList.add('opacity-50', 'cursor-not-allowed');
             statusContainer.classList.remove('hidden');
@@ -735,49 +947,30 @@ Kosongkan value jika datanya terpotong, tidak jelas, atau benar-benar tidak dite
 Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang salah baca menjadi 0).`;
 
             const payload = {
-                contents: [{
-                    role: "user",
-                    parts: [
-                        { text: promptText },
-                        { inlineData: { mimeType: "image/jpeg", data: base64ImageData } }
-                    ]
-                }],
+                contents: [{ role: "user", parts: [ { text: promptText }, { inlineData: { mimeType: "image/jpeg", data: base64ImageData } } ] }],
                 systemInstruction: { parts: [{ text: "Kamu adalah sistem OCR dan ekstraktor data tercanggih khusus untuk KTP Indonesia." }] },
                 generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
-                            nik: { type: "STRING" },
-                            nama: { type: "STRING" },
-                            ttl: { type: "STRING" },
-                            jk: { type: "STRING" },
-                            alamat: { type: "STRING" },
-                            rtrw: { type: "STRING" },
-                            desa: { type: "STRING" },
-                            kecamatan: { type: "STRING" },
-                            agama: { type: "STRING" },
-                            kawin: { type: "STRING" },
-                            pekerjaan: { type: "STRING" },
-                            warga: { type: "STRING" }
+                            nik: { type: "STRING" }, nama: { type: "STRING" }, ttl: { type: "STRING" },
+                            jk: { type: "STRING" }, alamat: { type: "STRING" }, rtrw: { type: "STRING" },
+                            desa: { type: "STRING" }, kecamatan: { type: "STRING" }, agama: { type: "STRING" },
+                            kawin: { type: "STRING" }, pekerjaan: { type: "STRING" }, warga: { type: "STRING" }
                         }
                     }
                 }
             };
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const result = await fetchWithRetry(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
+                const result = await fetchWithRetry(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                
                 const jsonText = result.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (!jsonText) throw new Error("Respons AI kosong.");
                 
                 const data = JSON.parse(jsonText);
-
                 if(data.nik) document.getElementById('f_nik').value = data.nik;
                 if(data.nama) document.getElementById('f_nama').value = data.nama;
                 if(data.ttl) document.getElementById('f_ttl').value = data.ttl;
@@ -790,12 +983,12 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                 if(data.kawin) document.getElementById('f_kawin').value = data.kawin;
                 if(data.pekerjaan) document.getElementById('f_pekerjaan').value = data.pekerjaan;
                 if(data.warga) document.getElementById('f_warga').value = data.warga;
-
+                
                 showToast("✨ AI Vision berhasil membaca dan menyusun data!", "success");
             } catch (error) {
-                console.error("OCR Error:", error);
-                // Swal.fire('Gagal', 'Terjadi kesalahan saat memproses gambar dengan AI.', 'error');
-                showToast("Terjadi kesalahan saat memproses gambar dengan AI.", "error");
+                console.error(error);
+                showToast("Kesalahan API: Pastikan API Key yang Anda atur sudah benar.", "error");
+                if (error.message.includes('API key')) openApiModal();
             } finally {
                 scanBtn.disabled = false;
                 scanBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -805,8 +998,15 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
 
         // ✨ AI Logic: Insight Strategis
         generateInsightBtn.addEventListener('click', async () => {
+            const apiConfig = getApiConfig();
+            
+            if(window.self === window.top && !apiConfig.key) {
+                showToast("Anda harus mengatur API Key terlebih dahulu!", "error");
+                openApiModal();
+                return;
+            }
+
             if (!window.dashboardSummary) {
-                // Swal.fire('Info', 'Silakan tunggu data dashboard selesai dimuat terlebih dahulu.', 'info');
                 showToast("Silakan tunggu data dashboard selesai dimuat terlebih dahulu.", "error");
                 return;
             }
@@ -826,42 +1026,31 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
             Fokuskan evaluasi pada:
             1. Tren rekrutmen saat ini.
             2. Peringatan jika keterwakilan perempuan secara global atau di kecamatan tertentu berada di bawah 30%.
-            3. Saran langkah selanjutnya (Call to Action) untuk pimpinan partai.
-            Gunakan nada profesional, semangat, dan langsung pada intinya.`;
+            3. Saran langkah selanjutnya (Call to Action) untuk pimpinan partai.`;
 
             const payload = {
                 contents: [{ parts: [{ text: prompt }] }],
-                systemInstruction: { parts: [{ text: "Anda adalah analis data politik senior yang membantu pimpinan partai membaca statistik keanggotaan." }] }
+                systemInstruction: { parts: [{ text: "Anda adalah analis data politik senior." }] }
             };
 
             try {
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                
-                if (!response.ok) throw new Error("Gagal mengambil insight AI");
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiConfig.model}:generateContent?key=${apiConfig.key}`;
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                 const result = await response.json();
+                
+                if (result.error) throw new Error(result.error.message);
+
                 const text = result.candidates[0].content.parts[0].text;
-                
-                // Format teks (ubah markdown bold menjadi HTML)
-                const formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
-                aiInsightResult.innerHTML = formattedText;
-                
+                aiInsightResult.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
             } catch (error) {
-                console.error("AI Insight Error:", error);
-                aiInsightResult.innerHTML = '<span class="text-red-500">Gagal menghasilkan analisis AI. Coba lagi nanti.</span>';
-                // Swal.fire('Error', 'Gagal memanggil Gemini API', 'error');
+                console.error(error);
+                aiInsightResult.innerHTML = '<span class="text-red-500">Gagal menghasilkan analisis AI. Pastikan API Key valid.</span>';
                 showToast("Gagal memanggil Gemini API", "error");
             } finally {
                 generateInsightBtn.disabled = false;
                 generateInsightBtn.innerHTML = btnOriginalText;
             }
         });
-
-        
 
         // Fitur Simpan Data ke Google Spreadsheet
         sheetsBtn.addEventListener('click', async () => {
@@ -878,7 +1067,7 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                 kawin: document.getElementById('f_kawin').value,
                 pekerjaan: document.getElementById('f_pekerjaan').value,
                 warga: document.getElementById('f_warga').value,
-                berlaku: document.getElementById('f_berlaku').value,
+                jabatan: document.getElementById('f_jabatan') ? document.getElementById('f_jabatan').value : ''
             };
 
             if (!dataToExport.nik && !dataToExport.nama) {
@@ -897,31 +1086,14 @@ Perhatikan baik-baik angka NIK (harus 16 digit, pastikan tidak ada huruf O yang 
                     body: JSON.stringify(dataToExport)
                 });
                 showToast("Berhasil mengirim data ke Google Spreadsheet!", "success");
-                
-                // Clear cache data sheet agar ter-update saat tab dibuka
-                globalSheetData = null;
+                globalSheetData = null; 
 
             } catch (error) {
-                console.error("Spreadsheet Error:", error);
                 showToast("Gagal menyimpan ke Spreadsheet. Periksa koneksi internet.", "error");
             } finally {
                 sheetsBtn.disabled = false;
                 sheetsBtn.innerHTML = '<i class="ph ph-google-logo text-lg"></i> Simpan ke Spreadsheet';
             }
-
-            function saveApiKey() {
-                    const key = document.getElementById('manualApiKey').value;
-                    localStorage.setItem('gemini_api_key', key);
-                    alert("API Key tersimpan!");
-                }
-             
-                async function callGemini(payload) {
-                    const apiKey = localStorage.getItem('gemini_api_key');
-                    if (!apiKey) return alert("Masukkan API Key terlebih dahulu!");
-                
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-                    // ... lanjut dengan fetch ...
-                }
         });
 
     </script>
