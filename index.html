@@ -398,11 +398,11 @@
                 <p class="text-xs text-slate-500 mt-3">Sistem mencocokkan nama pengurus dengan jabatannya berdasarkan data kolom "Jabatan" pada spreadsheet.</p>
             </div>
 
-            <!-- Area Render Dokumen -->
+            <!-- Area Render Dokumen SK (Struktur) -->
             <div id="printContainer" class="bg-white p-6 sm:p-12 rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
-                <div id="printSection" class="w-full max-w-3xl mx-auto text-black leading-relaxed" style="font-family: 'Times New Roman', Times, serif; background-color: white;">
+                <div id="printSection" class="w-full max-w-3xl mx-auto text-black" style="font-family: 'Times New Roman', Times, serif; background-color: white; font-size: 12pt; line-height: 1.15;">
                     
-                    <div class="text-center font-bold text-lg mb-8">
+                    <div class="text-center font-bold mb-6 text-[12pt] leading-snug">
                         <p>SUSUNAN PENGURUS</p>
                         <p>DEWAN PIMPINAN CABANG PARTAI AMANAT NASIONAL</p>
                         <p>KECAMATAN <span id="printKecName" class="uppercase">...................</span> KABUPATEN OGAN KOMERING ILIR</p>
@@ -440,6 +440,72 @@
                 </div>
             </div>
         </div>
+
+        <!-- ============================================== -->
+        <!-- WADAH TEMPLATE SURAT PERNYATAAN (TERSEMBUNYI)  -->
+        <!-- Digunakan khusus untuk dirender ke PDF oleh html2pdf -->
+        <!-- ============================================== -->
+        <div id="suratTemplate" class="hidden">
+            <!-- Frame ukuran A4, 1 Lembar persis -->
+            <div id="suratPrintSection" class="w-[210mm] h-[297mm] mx-auto bg-white text-black text-justify overflow-hidden" style="font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.15; padding: 1.5cm 2cm; box-sizing: border-box;">
+                <div class="text-center font-bold mb-4 text-[12pt] leading-snug">
+                    <p>SURAT PERNYATAAN KESEDIAAN MENJADI PENGURUS</p>
+                    <p>DEWAN PIMPINAN CABANG PARTAI AMANAT NASIONAL</p>
+                    <p>KECAMATAN <span id="sp_kec_title" class="uppercase">...............</span> KABUPATEN OGAN KOMERING ILIR</p>
+                    <p>PROVINSI SUMATERA SELATAN PERIODE 2024– 2029</p>
+                </div>
+                
+                <p class="mb-1">Yang bertanda tangan dibawah ini,</p>
+                <table class="w-full ml-4 mb-3">
+                    <tr><td class="w-40 align-top">Nama</td><td class="w-4 align-top">:</td><td><span id="sp_nama" class="font-bold"></span></td></tr>
+                    <tr><td class="align-top">Tempat, tgl. lahir</td><td class="align-top">:</td><td><span id="sp_ttl"></span></td></tr>
+                    <tr><td class="align-top">No. KTP</td><td class="align-top">:</td><td><span id="sp_nik"></span></td></tr>
+                    <tr><td class="align-top">Alamat</td><td class="align-top">:</td><td><span id="sp_alamat"></span></td></tr>
+                    <tr><td class="align-top">No. Anggota PAN</td><td class="align-top">:</td><td><span id="sp_kta">-</span></td></tr>
+                    <tr><td class="align-top">No. Hp</td><td class="align-top">:</td><td><span id="sp_hp">-</span></td></tr>
+                </table>
+                
+                <p class="mb-1">Menyatakan :</p>
+                <ol class="list-decimal ml-8 mb-3 space-y-1">
+                    <li class="pl-2">Bersedia menjadi pengurus DPC PAN Kecamatan <span id="sp_kec_1" class="font-bold uppercase">.........</span> Kabupaten Ogan Komering Ilir Sumatera Selatan Periode 2024-2029.</li>
+                    <li class="pl-2">Sanggup menjalan tugas dan kewajiban menjadi pengurus pengurus DPC PAN Kecamatan <span id="sp_kec_2" class="font-bold uppercase">.........</span> Kabupaten Ogan Komering Ilir Sumatera Selatan Periode 2024-2029 dengan aktif, kredibel, akuntabel dan bertanggung jawab sesuai Platform, ketentuan Anggaran Dasar, Anggaran Rumah Tangga, dan Peraturan Partai serta kebijakan Ketua Umum DPP PAN.</li>
+                    <li class="pl-2">Bersedia meluangkan dan mengorbankan waktu untuk Partai.</li>
+                    <li class="pl-2">Tidak menjadi Pengurus dan/atau Anggota Partai Politik lain.</li>
+                    <li class="pl-2">Bersedia mengundurkan diri atau diberhentikan apabila tidak aktif selama 3 (tiga) bulan.</li>
+                    <li class="pl-2">Menjaga nama baik PAN, Ketua DPD, Ketua DPW dan Ketua Umum DPP dalam setiap tindakan dan saat menjalankan tugas.</li>
+                </ol>
+                
+                <p class="mb-4">Demikian pernyataan ini saya buat dengan sebenarnya, tanpa paksaan dari pihak manapun, dan bilamana dikemudian hari terbukti ada keterangan yang tidak sesuai dengan pernyataan tersebut di atas, bersedia diproses sesuai hukum/ketentuan yang berlaku.</p>
+                
+                <div class="flex justify-end pr-8">
+                    <div class="w-64">
+                        <table class="w-full mb-1">
+                            <tr><td class="w-24">Dibuat di</td><td>: Kayuagung</td></tr>
+                            <tr><td>Tanggal</td><td>: ........................</td></tr>
+                        </table>
+                        <p class="mb-16">Yang menyatakan,</p>
+                        <p class="font-bold underline text-center uppercase"><span id="sp_nama_ttd">...................................</span></p>
+                    </div>
+                </div>
+                
+                <!-- Tabel 2 Kolom untuk KTP & KTA -->
+                <table class="w-full mt-2 border-collapse table-fixed">
+                    <tr>
+                        <td class="w-1/2 p-2">
+                            <div class="border-2 border-black border-dashed h-40 w-full flex items-center justify-center font-bold text-slate-300">
+                                FOTO KTP
+                            </div>
+                        </td>
+                        <td class="w-1/2 p-2">
+                            <div class="border-2 border-black border-dashed h-40 w-full flex items-center justify-center font-bold text-slate-300">
+                                FOTO KTA
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
     </main>
 
     <!-- Modal Pengaturan API -->
@@ -518,8 +584,6 @@
         // Fungsi cerdas untuk menentukan model AI mana yang digunakan
         function getApiConfig() {
             const storedKey = localStorage.getItem('gemini_api_key') || '';
-            // Jika ada key dari pengguna (GitHub pages), gunakan model publik (1.5-flash). 
-            // Jika kosong (dalam mode Canvas internal), gunakan model preview.
             const modelName = storedKey ? 'gemini-1.5-flash' : 'gemini-2.5-flash-preview-09-2025';
             return { key: storedKey, model: modelName };
         }
@@ -544,9 +608,7 @@
             }
         });
 
-        // Tampilkan modal pengaturan API otomatis jika di-deploy ke hosting seperti GitHub
         window.addEventListener('DOMContentLoaded', () => {
-            // Mengecek apakah aplikasi berjalan di iframe (Canvas) atau di hosting mandiri (GitHub Pages)
             const isHosted = window.self === window.top;
             if (isHosted && !localStorage.getItem('gemini_api_key')) {
                 setTimeout(openApiModal, 1000);
@@ -723,9 +785,10 @@
             const nikIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nik'));
             const namaIdx = headers.findIndex(h => h && h.toString().toLowerCase().includes('nama'));
             
+            // Tambahkan kolom Aksi pada Header
             let headerHtml = '<tr><th class="px-4 py-3 text-center">No.</th>';
             for(let j = 1; j < headers.length; j++) headerHtml += `<th class="px-4 py-3">${headers[j]}</th>`;
-            headerHtml += '</tr>';
+            headerHtml += `<th class="px-4 py-3 text-center sticky right-0 bg-slate-100 shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)]">Aksi Cetak</th></tr>`;
             sheetTableHead.innerHTML = headerHtml;
 
             let bodyHtml = '';
@@ -748,7 +811,6 @@
                 for (let j = 1; j < row.length; j++) { 
                     let cellData = row[j] || '-';
                     if (cellData !== '-') {
-                        // Hanya NIK yang disensor di sini
                         if (j === nikIdx) {
                             let str = cellData.toString();
                             if (str.length > 6) cellData = str.slice(0, -6) + '*****';
@@ -759,6 +821,14 @@
                     }
                     bodyHtml += `<td class="px-4 py-2 border-t border-slate-100">${cellData}</td>`; 
                 }
+
+                // Tambahkan Tombol Cetak Surat Pernyataan di kolom terakhir
+                bodyHtml += `<td class="px-4 py-2 border-t border-slate-100 text-center sticky right-0 bg-white/90 backdrop-blur shadow-[-4px_0_6px_-1px_rgba(0,0,0,0.05)]">
+                    <button onclick="exportSuratPernyataan(${i})" class="bg-indigo-100 text-indigo-700 hover:bg-indigo-200 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 mx-auto transition-colors whitespace-nowrap border border-indigo-200">
+                        <i class="ph ph-file-pdf text-sm"></i> Surat
+                    </button>
+                </td>`;
+
                 bodyHtml += '</tr>';
                 count++;
             }
@@ -776,7 +846,81 @@
             loadSheetData();
         });
 
-        // ------------- CETAK & EXPORT PDF LOGIC -------------
+
+        // ------------- EXPORT SURAT PERNYATAAN (INDIVIDU) LOGIC -------------
+        function exportSuratPernyataan(rowIndex) {
+            const row = globalSheetData[rowIndex];
+            const headers = globalSheetData[0].map(h => (h||'').toString().toLowerCase());
+            
+            // Fungsi pembantu mencari index kolom berdasarkan kata kunci
+            const getIdx = (keywords) => {
+                for(let kw of keywords) {
+                    let idx = headers.findIndex(h => h.includes(kw));
+                    if(idx !== -1) return idx;
+                }
+                return -1;
+            };
+
+            const nikIdx = getIdx(['nik']);
+            const namaIdx = getIdx(['nama']);
+            const ttlIdx = getIdx(['tempat', 'ttl', 'lahir']);
+            const alamatIdx = getIdx(['alamat']);
+            const kecIdx = getIdx(['kecamatan', 'kec']);
+            const hpIdx = getIdx(['hp', 'telepon', 'whatsapp']); 
+            const ktaIdx = getIdx(['kta', 'anggota', 'no. anggota']); 
+
+            const getVal = (idx) => (idx !== -1 && row[idx]) ? row[idx].toString().toUpperCase() : '-';
+
+            const nama = getVal(namaIdx);
+            const nik = getVal(nikIdx);
+            const ttl = getVal(ttlIdx);
+            const alamat = getVal(alamatIdx);
+            const kec = getVal(kecIdx);
+            const hp = getVal(hpIdx);
+            const kta = getVal(ktaIdx);
+
+            // Memasukkan data ke dalam template HTML Surat Pernyataan
+            document.getElementById('sp_kec_title').textContent = kec !== '-' ? kec : '...............';
+            document.getElementById('sp_kec_1').textContent = kec !== '-' ? kec : '.........';
+            document.getElementById('sp_kec_2').textContent = kec !== '-' ? kec : '.........';
+            document.getElementById('sp_nama').textContent = nama;
+            document.getElementById('sp_nama_ttd').textContent = nama !== '-' ? nama : '...................................';
+            document.getElementById('sp_ttl').textContent = ttl;
+            document.getElementById('sp_nik').textContent = nik;
+            document.getElementById('sp_alamat').textContent = alamat;
+            document.getElementById('sp_hp').textContent = hp;
+            document.getElementById('sp_kta').textContent = kta;
+
+            // Mengatur container template agar siap dirender oleh html2pdf tanpa merusak UI
+            const printContainer = document.getElementById('suratTemplate');
+            printContainer.classList.remove('hidden');
+            printContainer.style.position = 'absolute';
+            printContainer.style.left = '-9999px';
+            printContainer.style.top = '0';
+
+            const element = document.getElementById('suratPrintSection');
+            const opt = {
+                margin:       0, // Padding diatur di dalam CSS elemen
+                filename:     `SURAT_KESEDIAAN_PENGURUS_${nama.replace(/\s+/g, '_')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            showToast(`Memproses dokumen untuk ${nama}...`, "success");
+
+            // Proses render PDF
+            html2pdf().set(opt).from(element).save().then(() => {
+                // Sembunyikan kembali setelah selesai
+                printContainer.classList.add('hidden');
+                printContainer.style.position = '';
+                printContainer.style.left = '';
+                printContainer.style.top = '';
+            });
+        }
+
+
+        // ------------- CETAK & EXPORT PDF SK STRUKTUR -------------
         async function initCetakView() {
             if(!globalSheetData) {
                 try {
